@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Báo cáo rác - WastePlatform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .upload-zone {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #198754;
+            background: #f0fff4;
+        }
+        .gps-btn {
+            border: 1.5px solid #198754;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            color: #198754;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .gps-btn:hover { background: #198754; color: white; }
+        .gps-btn.loading { opacity: 0.7; pointer-events: none; }
+        .waste-type-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .waste-type-card:hover { border-color: #198754; }
+        .waste-type-card.selected {
+            border-color: #198754;
+            background: #f0fff4;
+        }
+        .waste-type-card input[type="radio"] { display: none; }
+        .map-preview {
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            display: none;
+        }
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #dee2e6;
+            color: #6c757d;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .step.active { background: #198754; color: white; }
+        .step.done { background: #d4edda; color: #198754; }
+        .step-line { flex: 1; height: 2px; background: #dee2e6; margin: 0 8px; }
+        .step-line.done { background: #198754; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav th:replace="~{layout/navbar :: navbar}"></nav>
+
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <!-- Header -->
+                <div class="d-flex align-items-center mb-4">
+                    <a th:href="@{/citizen/dashboard}" class="btn btn-outline-secondary btn-sm me-3">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h4 class="fw-bold text-success mb-0">
+                            <i class="fas fa-plus-circle me-2"></i>Tạo báo cáo thu gom rác
+                        </h4>
+                        <p class="text-muted small mb-0">Điền đầy đủ thông tin để được xử lý nhanh nhất</p>
+                    </div>
+                </div>
+
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step active" id="step1-dot">1</div>
+                    <div class="step-line" id="line1"></div>
+                    <div class="step" id="step2-dot">2</div>
+                    <div class="step-line" id="line2"></div>
+                    <div class="step" id="step3-dot">3</div>
+                </div>
+                <div class="d-flex justify-content-between mb-4 small text-muted">
+                    <span>Loại rác</span>
+                    <span>Vị trí & Mô tả</span>
+                    <span>Hình ảnh</span>
+                </div>
+
+                <!-- Alert -->
+                <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span th:text="${errorMsg}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <form th:action="@{/citizen/report-form}" method="post"
+                      th:object="${wasteReportRequest}"
+                      enctype="multipart/form-data" id="reportForm" novalidate>
+
+                    <!-- ==================== STEP 1: Loại rác ==================== -->
+                    <div id="step1" class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-success text-white py-3">
+                            <h5 class="fw-bold mb-0">
+                                <span class="badge bg-white text-success me-2">1</span>
+                                Chọn loại rác
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+
+                            <!-- Select dropdown -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Loại rác *</label>
+                                <select th:field="*{wasteTypeId}" class="form-select form-select-lg"
+                                        th:classappend="${#fields.hasErrors('wasteTypeId')} ? 'is-invalid'"
+                                        id="wasteTypeSelect" onchange="updateWasteTypeInfo(this)">
+                                    <option value="">-- Chọn loại rác --</option>
+                                    <optgroup label="♻️ Có thể tái chế">
+                                        <option th:each="wt : ${wasteTypes}"
+                                                th:if="${wt.category == 'RECYCLABLE'}"
+                                                th:value="${wt.id}"
+                                                th:text="${wt.name + ' (+' + wt.basePoints + ' điểm)'}">
+                                        </option>
+                                    </optgroup>
+                                    <optgroup label="🌱 Hữu cơ">
+                                        <option th:each="wt : ${wasteTypes}"
+                                                th:if="${wt.category == 'ORGANIC'}"
+                                                th:value="${wt.id}"
+                                                th:text="${wt.name + ' (+' + wt.basePoints + ' điểm)'}">
+                                        </option>
+                                    </optgroup>
+                                    <optgroup label="⚠️ Nguy hại">
+                                        <option th:each="wt : ${wasteTypes}"
+                                                th:if="${wt.category == 'HAZARDOUS'}"
+                                                th:value="${wt.id}"
+                                                th:text="${wt.name + ' (+' + wt.basePoints + ' điểm)'}">
+                                        </option>
+                                    </optgroup>
+                                    <optgroup label="🗑️ Thông thường">
+                                        <option th:each="wt : ${wasteTypes}"
+                                                th:if="${wt.category == 'GENERAL'}"
+                                                th:value="${wt.id}"
+                                                th:text="${wt.name + ' (+' + wt.basePoints + ' điểm)'}">
+                                        </option>
+                                    </optgroup>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{wasteTypeId}"></div>
+                            </div>
+
+                            <!-- Info box loại rác -->
+                            <div id="wasteTypeInfo" class="alert alert-info d-none">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <span id="wasteTypeDesc"></span>
+                            </div>
+
+                            <!-- Điểm thưởng ước tính -->
+                            <div id="pointsPreview" class="d-none">
+                                <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-star text-warning fs-4 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold text-success">Điểm thưởng ước tính</div>
+                                            <div class="text-muted small">
+                                                Bạn sẽ nhận được
+                                                <span id="estimatedPoints" class="fw-bold text-success">0</span>
+                                                điểm khi báo cáo được thu gom
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== STEP 2: Vị trí & Mô tả ==================== -->
+                    <div id="step2" class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="fw-bold mb-0 text-success">
+                                <span class="badge bg-success text-white me-2">2</span>
+                                Vị trí & Mô tả
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+
+                            <!-- Tiêu đề -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-heading me-1 text-success"></i>Tiêu đề báo cáo *
+                                </label>
+                                <input type="text" th:field="*{title}" class="form-control form-control-lg"
+                                       th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'"
+                                       placeholder="VD: Đống chai nhựa lớn tại vỉa hè quán cà phê"/>
+                                <div class="invalid-feedback" th:errors="*{title}"></div>
+                            </div>
+
+                            <!-- GPS Location -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                                    Vị trí GPS (tự động)
+                                </label>
+                                <div class="d-flex gap-2 mb-2">
+                                    <button type="button" class="gps-btn flex-grow-1" id="gpsBtn"
+                                            onclick="getGPS()">
+                                        <i class="fas fa-location-arrow me-2"></i>
+                                        Lấy vị trí hiện tại
+                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <div>
+                                            <input type="number" th:field="*{latitude}"
+                                                   id="latInput" class="form-control form-control-sm"
+                                                   placeholder="Lat" step="any" style="width: 100px"/>
+                                        </div>
+                                        <div>
+                                            <input type="number" th:field="*{longitude}"
+                                                   id="lngInput" class="form-control form-control-sm"
+                                                   placeholder="Lng" step="any" style="width: 100px"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="gpsStatus" class="small text-muted"></div>
+                                <!-- Map preview -->
+                                <iframe id="mapPreview" class="map-preview" frameborder="0"></iframe>
+                            </div>
+
+                            <!-- Địa chỉ -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-map-pin me-1 text-success"></i>Địa chỉ chi tiết *
+                                </label>
+                                <input type="text" th:field="*{address}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('address')} ? 'is-invalid'"
+                                       id="addressInput"
+                                       placeholder="VD: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM"/>
+                                <div class="invalid-feedback" th:errors="*{address}"></div>
+                                <div class="form-text">
+                                    <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                    Địa chỉ càng chi tiết, collector đến càng nhanh
+                                </div>
+                            </div>
+
+                            <!-- Mô tả -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-align-left me-1 text-success"></i>Mô tả chi tiết
+                                </label>
+                                <textarea th:field="*{description}" class="form-control" rows="3"
+                                          placeholder="Mô tả thêm: tình trạng rác, khả năng tiếp cận, thời gian rảnh để phối hợp thu gom..."></textarea>
+                            </div>
+							                            <!-- Ghi chú cho Collector -->
+							<div class="mb-3">
+							    <label class="form-label fw-semibold">
+							        <i class="fas fa-comment-alt me-1 text-success"></i>
+							        Ghi chú cho Collector
+							    </label>
+							    <textarea th:field="*{citizenNote}" class="form-control" rows="2"
+							              placeholder="VD: Nhà có cổng màu xanh, gọi điện trước khi đến, chỉ rảnh buổi sáng..."></textarea>
+							    <div class="form-text">
+							        <i class="fas fa-info-circle me-1 text-info"></i>
+							        Thông tin này sẽ được gửi đến Collector để phối hợp thu gom dễ dàng hơn
+							    </div>
+							</div>
+
+                            <!-- Khối lượng -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-weight me-1 text-success"></i>
+                                    Khối lượng ước tính (kg)
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" th:field="*{quantityKg}" class="form-control"
+                                           placeholder="VD: 10.5" step="0.1" min="0.1" max="10000"/>
+                                    <span class="input-group-text">kg</span>
+                                </div>
+                                <div class="form-text">Nhập khối lượng càng chính xác, điểm thưởng càng cao</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==================== STEP 3: Hình ảnh ==================== -->
+                    <div id="step3" class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="fw-bold mb-0 text-success">
+                                <span class="badge bg-success text-white me-2">3</span>
+                                Hình ảnh rác
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="upload-zone" id="uploadZone"
+                                 onclick="document.getElementById('imageFile').click()"
+                                 ondragover="event.preventDefault(); this.classList.add('dragover')"
+                                 ondragleave="this.classList.remove('dragover')"
+                                 ondrop="handleDrop(event)">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3 d-block"></i>
+                                <h6 class="fw-semibold">Kéo thả ảnh vào đây hoặc click để chọn</h6>
+                                <p class="text-muted small mb-0">
+                                    Hỗ trợ: JPG, PNG, WEBP · Tối đa 10MB
+                                </p>
+                            </div>
+
+                            <input type="file" id="imageFile" name="imageFile"
+                                   accept="image/*" class="d-none"
+                                   onchange="previewImage(this)"/>
+
+                            <!-- Preview -->
+                            <div id="imagePreviewContainer" class="d-none mt-3">
+                                <div class="position-relative d-inline-block">
+                                    <img id="imagePreview" src="" alt="Preview"
+                                         class="img-thumbnail" style="max-height: 250px; border-radius: 10px"/>
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1"
+                                            onclick="removeImage()" style="border-radius: 50%; width: 28px; height: 28px; padding: 0;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <p id="imageName" class="text-muted small mt-2"></p>
+                            </div>
+
+                            <div class="mt-3 p-3 bg-light rounded small text-muted">
+                                <i class="fas fa-camera me-1 text-success"></i>
+                                <strong>Mẹo chụp ảnh tốt:</strong> Chụp rõ nét, đủ sáng, thể hiện rõ loại và
+                                lượng rác. Ảnh rõ ràng giúp tăng điểm thưởng và được xử lý nhanh hơn.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success btn-lg flex-fill fw-bold">
+                            <i class="fas fa-paper-plane me-2"></i>Gửi báo cáo
+                        </button>
+                        <a th:href="@{/citizen/dashboard}" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="fas fa-times me-1"></i>Hủy
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Waste type descriptions
+        const wasteDescriptions = {};
+
+        // Lấy GPS
+        function getGPS() {
+            const btn = document.getElementById('gpsBtn');
+            const status = document.getElementById('gpsStatus');
+
+            if (!navigator.geolocation) {
+                status.innerHTML = '<span class="text-danger"><i class="fas fa-times me-1"></i>Trình duyệt không hỗ trợ GPS</span>';
+                return;
+            }
+
+            btn.classList.add('loading');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang lấy vị trí...';
+            status.innerHTML = '';
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lng = position.coords.longitude.toFixed(6);
+                    const accuracy = Math.round(position.coords.accuracy);
+
+                    document.getElementById('latInput').value = lat;
+                    document.getElementById('lngInput').value = lng;
+
+                    status.innerHTML = `<span class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Đã lấy vị trí: ${lat}, ${lng} (độ chính xác: ~${accuracy}m)
+                    </span>`;
+
+                    // Hiện bản đồ
+                    const mapFrame = document.getElementById('mapPreview');
+                    mapFrame.style.display = 'block';
+                    mapFrame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+
+                    // Tự động điền địa chỉ bằng Nominatim (reverse geocoding miễn phí)
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.display_name) {
+                                const addr = document.getElementById('addressInput');
+                                if (!addr.value) {
+                                    addr.value = data.display_name;
+                                }
+                            }
+                        })
+                        .catch(() => {});
+
+                    btn.classList.remove('loading');
+                    btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Đã lấy vị trí';
+                    btn.style.background = '#198754';
+                    btn.style.color = 'white';
+                },
+                function(error) {
+                    let msg = 'Không thể lấy vị trí';
+                    if (error.code === 1) msg = 'Bạn đã từ chối quyền truy cập vị trí';
+                    else if (error.code === 2) msg = 'Không tìm thấy vị trí';
+                    else if (error.code === 3) msg = 'Hết thời gian chờ';
+
+                    status.innerHTML = `<span class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>${msg}
+                    </span>`;
+
+                    btn.classList.remove('loading');
+                    btn.innerHTML = '<i class="fas fa-location-arrow me-2"></i>Lấy vị trí hiện tại';
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        // Cập nhật thông tin loại rác
+        function updateWasteTypeInfo(select) {
+            const option = select.options[select.selectedIndex];
+            const infoBox = document.getElementById('wasteTypeInfo');
+            const pointsPreview = document.getElementById('pointsPreview');
+            const estPoints = document.getElementById('estimatedPoints');
+
+            if (select.value) {
+                const points = option.text.match(/\+(\d+)/);
+                if (points) {
+                    const base = parseInt(points[1]);
+                    estPoints.textContent = base + ' - ' + (base + 20);
+                    pointsPreview.classList.remove('d-none');
+                }
+
+                // Cập nhật step indicators
+                document.getElementById('step1-dot').classList.add('done');
+                document.getElementById('line1').classList.add('done');
+                document.getElementById('step2-dot').classList.add('active');
+            } else {
+                pointsPreview.classList.add('d-none');
+                infoBox.classList.add('d-none');
+            }
+        }
+
+        // Preview ảnh
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imageName').textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+                    document.getElementById('imagePreviewContainer').classList.remove('d-none');
+                    document.getElementById('uploadZone').style.display = 'none';
+
+                    // Update step
+                    document.getElementById('step3-dot').classList.add('active');
+                    document.getElementById('line2').classList.add('done');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Xóa ảnh
+        function removeImage() {
+            document.getElementById('imageFile').value = '';
+            document.getElementById('imagePreview').src = '';
+            document.getElementById('imagePreviewContainer').classList.add('d-none');
+            document.getElementById('uploadZone').style.display = 'block';
+            document.getElementById('step3-dot').classList.remove('active');
+        }
+
+        // Drag & drop
+        function handleDrop(event) {
+            event.preventDefault();
+            document.getElementById('uploadZone').classList.remove('dragover');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('imageFile').files = files;
+                previewImage(document.getElementById('imageFile'));
+            }
+        }
+
+        // Form validation
+        document.getElementById('reportForm').addEventListener('submit', function(e) {
+            const wasteType = document.getElementById('wasteTypeSelect').value;
+            const title = document.querySelector('[name="title"]').value;
+            const address = document.getElementById('addressInput').value;
+
+            if (!wasteType) {
+                e.preventDefault();
+                alert('Vui lòng chọn loại rác!');
+                return;
+            }
+            if (!title.trim()) {
+                e.preventDefault();
+                alert('Vui lòng nhập tiêu đề báo cáo!');
+                return;
+            }
+            if (!address.trim()) {
+                e.preventDefault();
+                alert('Vui lòng nhập địa chỉ!');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>

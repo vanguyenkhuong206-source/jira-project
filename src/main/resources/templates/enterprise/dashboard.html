@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Enterprise Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .stat-card { border-radius: 12px; transition: transform .2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .progress-row { border-left: 4px solid #198754; }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+        .live-dot { width:10px; height:10px; border-radius:50%;
+                    background:#198754; display:inline-block; margin-right:6px; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav th:replace="~{layout/navbar :: navbar}"></nav>
+
+    <div class="container-fluid py-4 px-4">
+        <h4 class="fw-bold text-success mb-4">
+            <i class="fas fa-building me-2"></i>Enterprise Dashboard
+            <small class="text-muted fs-6 fw-normal ms-2"
+                   th:text="${enterprise != null ? enterprise.companyName : ''}"></small>
+        </h4>
+
+        <!-- Alerts -->
+        <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+            <span th:text="${successMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+            <span th:text="${errorMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#requests-tab">
+                    <i class="fas fa-tasks me-1"></i>Yêu cầu thu gom
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#progress-tab">
+                    <i class="fas fa-satellite-dish me-1"></i>Theo dõi tiến độ
+                    <span class="live-dot pulse ms-1"></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#stats-tab">
+                    <i class="fas fa-chart-bar me-1"></i>Thống kê khối lượng
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#complaints-tab">
+                    <i class="fas fa-exclamation-circle me-1"></i>Khiếu nại
+                    <span class="badge bg-danger ms-1"
+                          th:text="${openComplaints != null ? #lists.size(openComplaints) : 0}">0</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 TAB 1: Yêu cầu thu gom (giữ nguyên)
+            ══════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade show active" id="requests-tab">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-warning text-dark border-0 py-3">
+                                <h5 class="fw-bold mb-0">
+                                    <i class="fas fa-clock me-2"></i>Yêu cầu chờ xử lý
+                                    (<span th:text="${#lists.size(pendingReports)}">0</span>)
+                                </h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush">
+                                    <div th:if="${#lists.isEmpty(pendingReports)}"
+                                         class="text-center py-5 text-muted">
+                                        <i class="fas fa-inbox fa-2x mb-2 d-block"></i>Không có yêu cầu nào
+                                    </div>
+                                    <div th:each="report : ${pendingReports}"
+                                         class="list-group-item list-group-item-action p-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="fw-semibold mb-1" th:text="${report.title}"></h6>
+                                                <p class="text-muted small mb-1">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                    <span th:text="${report.address}"></span>
+                                                </p>
+                                                <p class="text-muted small mb-0">
+                                                    <i class="fas fa-recycle me-1"></i>
+                                                    <span th:text="${report.wasteType.name}"></span>
+                                                </p>
+                                                <div th:if="${report.citizenNote != null and !report.citizenNote.isEmpty()}"
+                                                     class="mt-1 p-2 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25">
+                                                    <small class="fw-semibold text-warning">
+                                                        <i class="fas fa-comment-alt me-1"></i>Ghi chú:
+                                                    </small>
+                                                    <small class="text-muted" th:text="${report.citizenNote}"></small>
+                                                </div>
+                                            </div>
+                                            <div class="ms-3 d-flex gap-2">
+                                                <form th:action="@{/enterprise/reports/{id}/accept(id=${report.id})}" method="post">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </form>
+                                                <form th:action="@{/enterprise/reports/{id}/reject(id=${report.id})}" method="post">
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-info text-white border-0 py-3">
+                                <h5 class="fw-bold mb-0">
+                                    <i class="fas fa-tasks me-2"></i>Đã chấp nhận - Phân công
+                                    (<span th:text="${#lists.size(acceptedReports)}">0</span>)
+                                </h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush">
+                                    <div th:if="${#lists.isEmpty(acceptedReports)}"
+                                         class="text-center py-5 text-muted">
+                                        <i class="fas fa-inbox fa-2x mb-2 d-block"></i>Không có yêu cầu nào
+                                    </div>
+                                    <div th:each="report : ${acceptedReports}" class="list-group-item p-3">
+                                        <h6 class="fw-semibold mb-1" th:text="${report.title}"></h6>
+                                        <p class="text-muted small mb-2" th:text="${report.address}"></p>
+                                        <form th:action="@{/enterprise/assign}" method="post"
+                                              class="d-flex gap-2 align-items-center">
+                                            <input type="hidden" name="reportId" th:value="${report.id}"/>
+                                            <select name="collectorId" class="form-select form-select-sm">
+                                                <option value="">-- Chọn Collector --</option>
+                                                <option th:each="c : ${collectors}"
+                                                        th:value="${c.id}"
+                                                        th:text="${c.user.fullName + ' - ' + (c.vehiclePlate != null ? c.vehiclePlate : 'N/A')}">
+                                                </option>
+                                            </select>
+                                            <button type="submit" class="btn btn-primary btn-sm text-nowrap">
+                                                <i class="fas fa-user-check me-1"></i>Phân công
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 TAB 2: Theo dõi tiến độ (real-time)
+            ══════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="progress-tab">
+
+                <!-- Live indicator -->
+                <div class="d-flex align-items-center mb-3">
+                    <span class="live-dot pulse"></span>
+                    <span class="text-success fw-semibold me-3">Cập nhật tự động mỗi 30 giây</span>
+                    <span class="text-muted small" id="lastUpdated"></span>
+                    <button class="btn btn-outline-success btn-sm ms-3" onclick="refreshProgress()">
+                        <i class="fas fa-sync-alt me-1"></i>Làm mới
+                    </button>
+                </div>
+
+                <!-- Summary cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-2">
+                        <div class="card border-0 shadow-sm text-center p-3 stat-card">
+                            <div class="text-primary fs-2 fw-bold" id="cnt-total"
+                                 th:text="${totalReports}">0</div>
+                            <div class="small text-muted">Tổng</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="card border-0 shadow-sm text-center p-3 stat-card">
+                            <div class="text-warning fs-2 fw-bold" id="cnt-pending"
+                                 th:text="${pendingCount}">0</div>
+                            <div class="small text-muted">Chờ duyệt</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="card border-0 shadow-sm text-center p-3 stat-card">
+                            <div class="text-info fs-2 fw-bold" id="cnt-assigned"
+                                 th:text="${assignedCount}">0</div>
+                            <div class="small text-muted">Đã phân công</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="card border-0 shadow-sm text-center p-3 stat-card">
+                            <div class="text-warning fs-2 fw-bold" id="cnt-ontheway"
+                                 th:text="${onTheWayCount}">0</div>
+                            <div class="small text-muted">Đang đến</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="card border-0 shadow-sm text-center p-3 stat-card bg-success text-white">
+                            <div class="fs-2 fw-bold" id="cnt-collected"
+                                 th:text="${collectedCount}">0</div>
+                            <div class="small">Đã thu gom</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="card border-0 shadow-sm text-center p-3 stat-card">
+                            <div class="text-danger fs-2 fw-bold" id="cnt-rejected"
+                                 th:text="${rejectedCount}">0</div>
+                            <div class="small text-muted">Từ chối</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress bar tổng quan -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-chart-pie me-2 text-success"></i>Tiến độ xử lý tổng quan
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-semibold text-success">Đã thu gom</span>
+                                <span class="small text-muted" id="pct-collected">0%</span>
+                            </div>
+                            <div class="progress" style="height:12px">
+                                <div class="progress-bar bg-success" id="bar-collected"
+                                     role="progressbar" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-semibold text-info">Đang xử lý (phân công + đang đến)</span>
+                                <span class="small text-muted" id="pct-inprogress">0%</span>
+                            </div>
+                            <div class="progress" style="height:12px">
+                                <div class="progress-bar bg-info" id="bar-inprogress"
+                                     role="progressbar" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-semibold text-warning">Chờ duyệt</span>
+                                <span class="small text-muted" id="pct-pending">0%</span>
+                            </div>
+                            <div class="progress" style="height:12px">
+                                <div class="progress-bar bg-warning" id="bar-pending"
+                                     role="progressbar" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách đang xử lý -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-list me-2 text-info"></i>
+                            Các nhiệm vụ đang hoạt động
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${#lists.isEmpty(activeAssignments)}"
+                             class="text-center py-4 text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
+                            Không có nhiệm vụ nào đang thực hiện
+                        </div>
+                        <div class="table-responsive" th:unless="${#lists.isEmpty(activeAssignments)}">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Báo cáo</th>
+                                        <th>Địa chỉ</th>
+                                        <th>Collector</th>
+                                        <th>Loại rác</th>
+                                        <th>Trạng thái</th>
+                                        <th>Phân công lúc</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="a : ${activeAssignments}" class="progress-row">
+                                        <td class="fw-semibold" th:text="${a.wasteReport.title}"></td>
+                                        <td class="text-muted small" th:text="${a.wasteReport.address}"></td>
+                                        <td>
+                                            <span th:text="${a.collector.user.fullName}"></span><br>
+                                            <small class="text-muted" th:text="${a.collector.vehiclePlate}"></small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary"
+                                                  th:text="${a.wasteReport.wasteType.name}"></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${a.status == 'ASSIGNED'} ? 'bg-info' :
+                                                                  (${a.status == 'ON_THE_WAY'} ? 'bg-warning text-dark' : 'bg-secondary')"
+                                                  th:text="${a.status == 'ASSIGNED'} ? 'Đã phân công' :
+                                                           (${a.status == 'ON_THE_WAY'} ? '🚛 Đang đến' : ${a.status})">
+                                            </span>
+                                        </td>
+                                        <td class="text-muted small"
+                                            th:text="${a.assignedAt != null ? #temporals.format(a.assignedAt, 'HH:mm dd/MM/yyyy') : '-'}">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 TAB 3: Thống kê khối lượng
+            ══════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="stats-tab">
+
+                <!-- Tổng kg -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm text-center p-4 bg-success text-white stat-card">
+                            <div class="fs-1"><i class="fas fa-weight"></i></div>
+                            <h2 class="fw-bold" th:text="${#numbers.formatDecimal(totalKg, 1, 1)} + ' kg'">0 kg</h2>
+                            <p class="mb-0">Tổng khối lượng đã thu gom</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm text-center p-4 stat-card">
+                            <div class="text-success fs-1"><i class="fas fa-check-circle"></i></div>
+                            <h2 class="fw-bold text-success" th:text="${collectedCount}">0</h2>
+                            <p class="text-muted mb-0">Báo cáo đã hoàn thành</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm text-center p-4 stat-card">
+                            <div class="text-info fs-1"><i class="fas fa-calculator"></i></div>
+                            <h2 class="fw-bold text-info"
+                                th:text="${collectedCount > 0 ? #numbers.formatDecimal(totalKg / collectedCount, 1, 1) + ' kg' : '0 kg'}">0 kg</h2>
+                            <p class="text-muted mb-0">Trung bình mỗi lần thu gom</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Biểu đồ theo loại rác -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="fas fa-pie-chart me-2 text-success"></i>
+                                    Khối lượng theo loại rác (kg)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartByType" height="250"></canvas>
+                                <!-- Fallback nếu không có data -->
+                                <div th:if="${#maps.isEmpty(weightByType)}"
+                                     class="text-center text-muted py-4">
+                                    <i class="fas fa-chart-pie fa-2x mb-2 d-block"></i>
+                                    Chưa có dữ liệu thu gom
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Biểu đồ theo tháng -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="fas fa-chart-line me-2 text-info"></i>
+                                    Khối lượng 6 tháng gần nhất (kg)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartByMonth" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bảng chi tiết theo loại rác -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="fas fa-table me-2 text-success"></i>
+                                    Bảng chi tiết theo loại rác
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div th:if="${#maps.isEmpty(weightByType)}"
+                                     class="text-center py-4 text-muted">Chưa có dữ liệu</div>
+                                <div class="table-responsive" th:unless="${#maps.isEmpty(weightByType)}">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Loại rác</th>
+                                                <th>Khối lượng (kg)</th>
+                                                <th>Tỷ lệ</th>
+                                                <th>Biểu đồ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:each="entry : ${weightByType}">
+                                                <td class="fw-semibold" th:text="${entry.key}"></td>
+                                                <td th:text="${#numbers.formatDecimal(entry.value, 1, 1)} + ' kg'"></td>
+                                                <td th:text="${totalKg > 0 ? #numbers.formatDecimal(entry.value / totalKg * 100, 1, 1) + '%' : '0%'}"></td>
+                                                <td style="width:200px">
+                                                    <div class="progress" style="height:8px">
+                                                        <div class="progress-bar bg-success"
+                                                             th:style="${'width:' + (totalKg > 0 ? entry.value / totalKg * 100 : 0) + '%'}">
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 TAB 4: Khiếu nại (giữ nguyên)
+            ══════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="complaints-tab">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="fw-bold mb-0">
+                            <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+                            Danh sách khiếu nại từ Citizen
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${allComplaints == null or #lists.isEmpty(allComplaints)}"
+                             class="text-center py-5 text-muted">
+                            <i class="fas fa-smile fa-3x mb-3 d-block text-success"></i>
+                            Chưa có khiếu nại nào!
+                        </div>
+                        <div class="table-responsive"
+                             th:unless="${allComplaints == null or #lists.isEmpty(allComplaints)}">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Người khiếu nại</th>
+                                        <th>Tiêu đề</th>
+                                        <th>Báo cáo</th>
+                                        <th>Nội dung</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ngày gửi</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${allComplaints}">
+                                        <td th:text="${c.id}" class="text-muted small"></td>
+                                        <td>
+                                            <span class="fw-semibold" th:text="${c.user.fullName}"></span><br>
+                                            <small class="text-muted" th:text="${c.user.phone}"></small>
+                                        </td>
+                                        <td class="fw-semibold" th:text="${c.subject}"></td>
+                                        <td class="text-muted small"
+                                            th:text="${c.wasteReport != null ? c.wasteReport.title : '-'}"></td>
+                                        <td class="text-muted small" th:text="${c.content}"></td>
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${c.status == 'OPEN'} ? 'bg-warning text-dark' :
+                                                                  (${c.status == 'IN_REVIEW'} ? 'bg-info' :
+                                                                  (${c.status == 'RESOLVED'} ? 'bg-success' : 'bg-secondary'))"
+                                                  th:text="${c.status == 'OPEN'} ? 'Chờ xử lý' :
+                                                           (${c.status == 'IN_REVIEW'} ? 'Đang xem xét' :
+                                                           (${c.status == 'RESOLVED'} ? 'Đã giải quyết' : 'Đã đóng'))">
+                                            </span>
+                                        </td>
+                                        <td class="text-muted small"
+                                            th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                                        <td>
+                                            <button th:if="${c.status == 'OPEN' or c.status == 'IN_REVIEW'}"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    th:attr="data-bs-target='#respondModal' + ${c.id}">
+                                                <i class="fas fa-reply me-1"></i>Phản hồi
+                                            </button>
+                                            <div th:if="${c.adminResponse != null and !c.adminResponse.isEmpty()}"
+                                                 class="text-success small">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                <span th:text="${c.adminResponse}"></span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Respond Modals -->
+    <div th:each="c : ${allComplaints}">
+        <div th:if="${c.status == 'OPEN' or c.status == 'IN_REVIEW'}"
+             class="modal fade" th:id="'respondModal' + ${c.id}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="fas fa-reply me-2"></i>Phản hồi khiếu nại</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form th:action="@{/enterprise/complaints/{id}/respond(id=${c.id})}" method="post">
+                        <div class="modal-body">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <small class="text-muted">Từ:</small>
+                                <p class="fw-semibold mb-1" th:text="${c.user.fullName}"></p>
+                                <small class="text-muted">Tiêu đề: </small>
+                                <small th:text="${c.subject}"></small><br>
+                                <small class="text-muted">Nội dung: </small>
+                                <small th:text="${c.content}"></small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Phản hồi *</label>
+                                <textarea name="response" class="form-control" rows="4"
+                                          placeholder="Nhập phản hồi của bạn..." required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Cập nhật trạng thái</label>
+                                <select name="status" class="form-select">
+                                    <option value="IN_REVIEW">Đang xem xét</option>
+                                    <option value="RESOLVED">Đã giải quyết</option>
+                                    <option value="CLOSED">Đóng khiếu nại</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Gửi phản hồi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        // ── Dữ liệu từ server ─────────────────────────────────────────────
+        const weightByType  = /*[[${weightByType}]]*/ {};
+        const weightByMonth = /*[[${weightByMonth}]]*/ {};
+        const totalKg       = /*[[${totalKg}]]*/ 0;
+
+        // ── Biểu đồ loại rác (Doughnut) ───────────────────────────────────
+        const typeLabels = Object.keys(weightByType);
+        const typeData   = Object.values(weightByType);
+        if (typeLabels.length > 0) {
+            new Chart(document.getElementById('chartByType'), {
+                type: 'doughnut',
+                data: {
+                    labels: typeLabels,
+                    datasets: [{
+                        data: typeData,
+                        backgroundColor: ['#198754','#0dcaf0','#ffc107','#dc3545','#6c757d','#0d6efd'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: ${ctx.raw.toFixed(1)} kg`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Biểu đồ theo tháng (Bar) ──────────────────────────────────────
+        new Chart(document.getElementById('chartByMonth'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(weightByMonth),
+                datasets: [{
+                    label: 'Khối lượng (kg)',
+                    data: Object.values(weightByMonth),
+                    backgroundColor: 'rgba(25,135,84,0.7)',
+                    borderColor: '#198754',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'kg' } }
+                }
+            }
+        });
+
+        // ── Progress bars (tính từ counter cards) ─────────────────────────
+        function updateProgressBars(pending, assigned, onTheWay, collected, total) {
+            if (total === 0) return;
+            const pctCollected   = (collected / total * 100).toFixed(1);
+            const pctInprogress  = ((assigned + onTheWay) / total * 100).toFixed(1);
+            const pctPending     = (pending / total * 100).toFixed(1);
+
+            document.getElementById('bar-collected').style.width   = pctCollected + '%';
+            document.getElementById('bar-inprogress').style.width  = pctInprogress + '%';
+            document.getElementById('bar-pending').style.width     = pctPending + '%';
+            document.getElementById('pct-collected').textContent   = pctCollected + '%';
+            document.getElementById('pct-inprogress').textContent  = pctInprogress + '%';
+            document.getElementById('pct-pending').textContent     = pctPending + '%';
+        }
+
+        // Khởi tạo từ dữ liệu server
+        updateProgressBars(
+            /*[[${pendingCount}]]*/ 0,
+            /*[[${assignedCount}]]*/ 0,
+            /*[[${onTheWayCount}]]*/ 0,
+            /*[[${collectedCount}]]*/ 0,
+            /*[[${totalReports}]]*/ 0
+        );
+
+        // ── Real-time refresh (mỗi 30 giây) ──────────────────────────────
+        function refreshProgress() {
+            fetch('/enterprise/api/progress')
+                .then(r => r.json())
+                .then(d => {
+                    document.getElementById('cnt-total').textContent    = d.total;
+                    document.getElementById('cnt-pending').textContent  = d.pending;
+                    document.getElementById('cnt-assigned').textContent = d.assigned;
+                    document.getElementById('cnt-ontheway').textContent = d.onTheWay;
+                    document.getElementById('cnt-collected').textContent= d.collected;
+                    document.getElementById('cnt-rejected').textContent = d.rejected;
+                    document.getElementById('lastUpdated').textContent  = 'Cập nhật lúc: ' + d.updatedAt;
+                    updateProgressBars(d.pending, d.assigned, d.onTheWay, d.collected, d.total);
+                })
+                .catch(() => {});
+        }
+
+        // Cập nhật ngay khi load tab
+        document.querySelector('[href="#progress-tab"]').addEventListener('shown.bs.tab', refreshProgress);
+
+        // Auto-refresh mỗi 30 giây
+        setInterval(refreshProgress, 30000);
+    </script>
+</body>
+</html>

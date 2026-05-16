@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Collector Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .status-badge { font-size: 0.8rem; padding: 0.4em 0.8em; border-radius: 20px; }
+        .card-task { border-left: 4px solid #198754; transition: transform 0.2s; }
+        .card-task:hover { transform: translateY(-2px); }
+        .card-completed { border-left: 4px solid #6c757d; opacity: 0.85; }
+        .upload-area { border: 2px dashed #dee2e6; border-radius: 8px; padding: 1rem; text-align: center; cursor: pointer; }
+        .upload-area:hover { border-color: #198754; background: #f8fff8; }
+
+        /* ✅ THÊM MỚI: style nút toggle */
+        .toggle-status-btn {
+            min-width: 140px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            transition: all 0.25s;
+        }
+        .toggle-status-btn.available { background: #198754; color: white; }
+        .toggle-status-btn.available:hover { background: #146c43; }
+        .toggle-status-btn.busy { background: #6c757d; color: white; }
+        .toggle-status-btn.busy:hover { background: #565e64; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav th:replace="~{layout/navbar :: navbar}"></nav>
+
+    <div class="container py-4">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold text-success mb-0">
+                    <i class="fas fa-truck me-2"></i>Collector Dashboard
+                </h4>
+                <p class="text-muted small mb-0"
+                   th:text="${user.fullName != null ? user.fullName : user.username}"></p>
+            </div>
+
+            <!-- ✅ THAY ĐỔI: badge tĩnh → nút toggle -->
+            <div class="text-end" th:if="${collector != null}">
+                <form th:action="@{/collector/toggle-status}" method="post">
+                    <button th:if="${collector.isAvailable}"
+                            type="submit"
+                            class="toggle-status-btn available"
+                            onclick="return confirm('Chuyển sang trạng thái Đang bận?')">
+                        <i class="fas fa-circle me-2" style="color:#90ee90"></i>Sẵn sàng
+                        <i class="fas fa-toggle-on ms-1"></i>
+                    </button>
+                    <button th:unless="${collector.isAvailable}"
+                            type="submit"
+                            class="toggle-status-btn busy"
+                            onclick="return confirm('Chuyển sang trạng thái Sẵn sàng?')">
+                        <i class="fas fa-circle me-2"></i>Đang bận
+                        <i class="fas fa-toggle-off ms-1"></i>
+                    </button>
+                </form>
+                <div class="small text-muted mt-1">Nhấn để thay đổi trạng thái</div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="text-warning fs-1"><i class="fas fa-tasks"></i></div>
+                    <h2 class="fw-bold text-warning" th:text="${totalActive != null ? totalActive : 0}">0</h2>
+                    <p class="text-muted mb-0">Đang thực hiện</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="text-success fs-1"><i class="fas fa-check-double"></i></div>
+                    <h2 class="fw-bold text-success" th:text="${totalCompleted != null ? totalCompleted : 0}">0</h2>
+                    <p class="text-muted mb-0">Đã hoàn thành</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm text-center p-3"
+                     th:classappend="${collector != null && collector.isAvailable} ? 'bg-success text-white' : 'bg-secondary text-white'">
+                    <div class="fs-1"><i class="fas fa-user-check"></i></div>
+                    <h2 class="fw-bold"
+                        th:text="${collector != null && collector.isAvailable} ? 'Sẵn sàng' : 'Bận'">-</h2>
+                    <p class="mb-0">Trạng thái</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="collectorTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#active-tab">
+                    <i class="fas fa-clock me-1"></i>Nhiệm vụ đang làm
+                    <span class="badge bg-warning text-dark ms-1"
+                          th:text="${totalActive != null ? totalActive : 0}">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#history-tab">
+                    <i class="fas fa-history me-1"></i>Lịch sử công việc
+                    <span class="badge bg-secondary ms-1"
+                          th:text="${totalCompleted != null ? totalCompleted : 0}">0</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+
+            <!-- Tab: Nhiệm vụ đang làm -->
+            <div class="tab-pane fade show active" id="active-tab">
+                <div th:if="${activeAssignments == null or #lists.isEmpty(activeAssignments)}"
+                     class="text-center py-5 text-muted">
+                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                    Chưa có nhiệm vụ nào đang thực hiện
+                </div>
+
+                <div th:each="a : ${activeAssignments}" class="card border-0 shadow-sm mb-3 card-task">
+                    <div class="card-body p-4">
+                        <div class="row align-items-start">
+                            <div class="col-md-8">
+                                <!-- Tiêu đề -->
+                                <h5 class="fw-bold mb-1" th:text="${a.wasteReport.title}"></h5>
+                                <p class="text-muted small mb-2">
+                                    <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                                    <span th:text="${a.wasteReport.address}"></span>
+                                </p>
+								                                <!-- Ghi chú từ Citizen -->
+								<div th:if="${a.wasteReport.citizenNote != null and !a.wasteReport.citizenNote.isEmpty()}"
+								     class="mt-2 p-2 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25">
+								
+								    <small class="fw-semibold text-warning">
+								        <i class="fas fa-comment-alt me-1"></i>Ghi chú từ người dân:
+								    </small>
+								
+								    <p class="mb-0 small"
+								       th:text="${a.wasteReport.citizenNote}"></p>
+								</div>
+                                <!-- Thông tin rác -->
+                                <div class="mb-2">
+                                    <span class="badge me-2"
+                                          th:classappend="${a.wasteReport.wasteType.category == 'ORGANIC'} ? 'bg-success' :
+                                                          (${a.wasteReport.wasteType.category == 'RECYCLABLE'} ? 'bg-info' :
+                                                          (${a.wasteReport.wasteType.category == 'HAZARDOUS'} ? 'bg-danger' : 'bg-secondary'))"
+                                          th:text="${a.wasteReport.wasteType.name}"></span>
+                                    <span class="text-muted small"
+                                          th:if="${a.wasteReport.quantityKg != null}"
+                                          th:text="${a.wasteReport.quantityKg + ' kg'}"></span>
+                                </div>
+
+                                <!-- Ngày phân công -->
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-calendar me-1"></i>Phân công:
+                                    <span th:text="${#temporals.format(a.assignedAt, 'dd/MM/yyyy HH:mm')}"></span>
+                                </p>
+
+                                <!-- Notes nếu có -->
+                                <p class="text-muted small mb-0" th:if="${a.notes != null and !a.notes.isEmpty()}">
+                                    <i class="fas fa-sticky-note me-1"></i>
+                                    <span th:text="${a.notes}"></span>
+                                </p>
+                            </div>
+
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <!-- Status badge -->
+                                <div class="mb-3">
+                                    <span class="status-badge"
+                                          th:classappend="${a.status == 'ASSIGNED'} ? 'bg-info text-white' :
+                                                          (${a.status == 'ON_THE_WAY'} ? 'bg-warning text-dark' : 'bg-secondary text-white')"
+                                          th:text="${a.status == 'ASSIGNED'} ? 'Đã phân công' :
+                                                   (${a.status == 'ON_THE_WAY'} ? '🚛 Đang đến' : ${a.status})">
+                                    </span>
+                                </div>
+
+                                <!-- Action buttons -->
+                                <div class="d-flex flex-column gap-2">
+
+                                    <!-- Nút: Đang đến -->
+                                    <form th:if="${a.status == 'ASSIGNED'}"
+                                          th:action="@{/collector/assignments/{id}/update(id=${a.id})}"
+                                          method="post">
+                                        <input type="hidden" name="status" value="ON_THE_WAY"/>
+                                        <button type="submit" class="btn btn-warning w-100">
+                                            <i class="fas fa-truck me-1"></i>Bắt đầu đến
+                                        </button>
+                                    </form>
+
+                                    <!-- Nút: Hoàn thành + upload ảnh -->
+                                    <button class="btn btn-success w-100"
+                                            th:if="${a.status == 'ON_THE_WAY' or a.status == 'ASSIGNED'}"
+                                            data-bs-toggle="modal"
+                                            th:attr="data-bs-target='#completeModal' + ${a.id}">
+                                        <i class="fas fa-check-circle me-1"></i>Xác nhận hoàn thành
+                                    </button>
+
+                                    <!-- Nút: Thất bại -->
+                                    <form th:action="@{/collector/assignments/{id}/update(id=${a.id})}"
+                                          method="post">
+                                        <input type="hidden" name="status" value="FAILED"/>
+                                        <button type="submit" class="btn btn-outline-danger w-100"
+                                                onclick="return confirm('Xác nhận không thể thu gom?')">
+                                            <i class="fas fa-times me-1"></i>Không thể thu gom
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+
+                <!-- Modal xác nhận hoàn thành -->
+                <div th:each="a : ${activeAssignments}"
+                     class="modal fade"
+                     th:id="'completeModal' + ${a.id}"
+                     tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-check-circle me-2"></i>Xác nhận hoàn thành
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form th:action="@{/collector/assignments/{id}/update(id=${a.id})}"
+                                  method="post" enctype="multipart/form-data">
+                                <div class="modal-body">
+                                    <p class="fw-semibold" th:text="${a.wasteReport.title}"></p>
+                                    <p class="text-muted small" th:text="${a.wasteReport.address}"></p>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">
+                                            <i class="fas fa-camera me-1 text-success"></i>
+                                            Ảnh xác nhận thu gom
+                                        </label>
+                                        <input type="file"
+                                               name="completionImage"
+                                               accept="image/*"
+                                               class="form-control"
+                                               onchange="previewImg(this)"/>
+                                        <img id="preview" src="" class="img-fluid rounded mt-2 d-none"
+                                             style="max-height: 200px"/>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Ghi chú</label>
+                                        <textarea name="notes" class="form-control" rows="2"
+                                                  placeholder="Ghi chú thêm về quá trình thu gom..."></textarea>
+                                    </div>
+
+                                    <input type="hidden" name="status" value="COMPLETED"/>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check me-1"></i>Xác nhận hoàn thành
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Lịch sử công việc -->
+            <div class="tab-pane fade" id="history-tab">
+                <div th:if="${completedAssignments == null or #lists.isEmpty(completedAssignments)}"
+                     class="text-center py-5 text-muted">
+                    <i class="fas fa-history fa-3x mb-3 d-block"></i>
+                    Chưa có công việc nào hoàn thành
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Báo cáo</th>
+                                        <th>Địa chỉ</th>
+                                        <th>Loại rác</th>
+                                        <th>Trạng thái</th>
+                                        <th>Hoàn thành lúc</th>
+                                        <th>Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="a : ${completedAssignments}">
+                                        <td th:text="${a.id}" class="text-muted small"></td>
+                                        <td class="fw-semibold" th:text="${a.wasteReport.title}"></td>
+                                        <td class="text-muted small" th:text="${a.wasteReport.address}"></td>
+                                        <td>
+                                            <span class="badge bg-secondary"
+                                                  th:text="${a.wasteReport.wasteType.name}"></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Hoàn thành
+                                            </span>
+                                        </td>
+                                        <td class="text-muted small"
+                                            th:text="${a.completedAt != null ? #temporals.format(a.completedAt, 'dd/MM/yyyy HH:mm') : '-'}"></td>
+                                        <td class="text-muted small"
+                                            th:text="${a.notes != null ? a.notes : '-'}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function previewImg(input) {
+            const preview = document.getElementById('preview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>

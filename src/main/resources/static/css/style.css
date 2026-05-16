@@ -1,0 +1,76 @@
+/* ===========================
+   WastePlatform - Main CSS
+   =========================== */
+
+:root {
+    --primary-green: #28a745;
+    --dark-green: #1a5c2a;
+    --light-green: #d4edda;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Cards */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Status Badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.8em;
+}
+
+/* Table */
+.table > :not(caption) > * > * {
+    padding: 0.85rem 1rem;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1.5px solid #dee2e6;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Alert */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #28a745; border-radius: 3px; }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .container-fluid { padding: 1rem; }
+    .card-body { padding: 1rem; }
+    .table-responsive { font-size: 0.875rem; }
+}

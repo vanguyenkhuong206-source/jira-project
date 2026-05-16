@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard - Citizen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body class="bg-light">
+    <nav th:replace="~{layout/navbar :: navbar}"></nav>
+
+    <div class="container py-4">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold text-success mb-0">
+                    <i class="fas fa-home me-2"></i>Xin chào,
+                    <span th:text="${user.fullName != null ? user.fullName : user.username}">User</span>!
+                </h4>
+                <p class="text-muted small mb-0">Quản lý báo cáo rác của bạn</p>
+            </div>
+            <a th:href="@{/citizen/report-form}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>Báo cáo rác mới
+            </a>
+        </div>
+
+        <!-- Alerts -->
+        <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${successMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${errorMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="text-primary fs-1"><i class="fas fa-clipboard-list"></i></div>
+                    <h3 class="fw-bold text-primary" th:text="${totalReports}">0</h3>
+                    <p class="text-muted mb-0">Tổng báo cáo</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="text-warning fs-1"><i class="fas fa-clock"></i></div>
+                    <h3 class="fw-bold text-warning" th:text="${pendingCount}">0</h3>
+                    <p class="text-muted mb-0">Đang chờ</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="text-success fs-1"><i class="fas fa-check-circle"></i></div>
+                    <h3 class="fw-bold text-success" th:text="${collectedCount}">0</h3>
+                    <p class="text-muted mb-0">Đã thu gom</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center p-3 bg-success text-white">
+                    <div class="fs-1"><i class="fas fa-star"></i></div>
+                    <h3 class="fw-bold" th:text="${user.rewardPoints}">0</h3>
+                    <p class="mb-0">Điểm thưởng</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#reports-tab">
+                    <i class="fas fa-list me-1"></i>Báo cáo của tôi
+                    <span class="badge bg-success ms-1" th:text="${totalReports}">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#complaints-tab">
+                    <i class="fas fa-exclamation-circle me-1"></i>Khiếu nại
+                    <span class="badge bg-danger ms-1"
+                          th:text="${complaints != null ? #lists.size(complaints) : 0}">0</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+
+            <!-- Tab: Báo cáo -->
+            <div class="tab-pane fade show active" id="reports-tab">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Tiêu đề</th>
+                                        <th>Loại rác</th>
+                                        <th>Địa chỉ</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ghi chú</th>
+                                        <th>Điểm</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${#lists.isEmpty(reports)}">
+                                        <td colspan="9" class="text-center py-5 text-muted">
+                                            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                            Chưa có báo cáo nào.
+                                            <a th:href="@{/citizen/report-form}">Tạo báo cáo đầu tiên!</a>
+                                        </td>
+                                    </tr>
+                                    <tr th:each="report : ${reports}">
+                                        <td th:text="${report.id}" class="text-muted small"></td>
+                                        <td class="fw-semibold" th:text="${report.title}"></td>
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${report.wasteType.category == 'ORGANIC'} ? 'bg-success' :
+                                                                  (${report.wasteType.category == 'RECYCLABLE'} ? 'bg-info' :
+                                                                  (${report.wasteType.category == 'HAZARDOUS'} ? 'bg-danger' : 'bg-secondary'))"
+                                                  th:text="${report.wasteType.name}"></span>
+                                        </td>
+                                        <td class="text-muted small" th:text="${report.address}"></td>
+                                        <td>
+                                            <span class="badge rounded-pill"
+                                                  th:classappend="${report.status == 'PENDING'} ? 'bg-warning text-dark' :
+                                                                  (${report.status == 'COLLECTED'} ? 'bg-success' :
+                                                                  (${report.status == 'REJECTED'} ? 'bg-danger' :
+                                                                  (${report.status == 'ON_THE_WAY'} ? 'bg-info' :
+                                                                  (${report.status == 'ASSIGNED'} ? 'bg-primary' : 'bg-secondary'))))"
+                                                  th:text="${report.status}"></span>
+                                        </td>
+                                        <td class="text-muted small">
+                                            <span th:if="${report.citizenNote != null and !report.citizenNote.isEmpty()}"
+                                                  class="text-info small">
+                                                <i class="fas fa-comment-alt me-1"></i>
+                                                <span th:text="${report.citizenNote}"></span>
+                                            </span>
+                                            <span th:unless="${report.citizenNote != null and !report.citizenNote.isEmpty()}"
+                                                  class="text-muted">-</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success fw-bold"
+                                                  th:if="${report.rewardPointsEarned > 0}"
+                                                  th:text="'+' + ${report.rewardPointsEarned} + ' pts'"></span>
+                                            <span class="text-muted"
+                                                  th:unless="${report.rewardPointsEarned > 0}">-</span>
+                                        </td>
+                                        <td class="text-muted small"
+                                            th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy')}"></td>
+                                        <td>
+                                            <!-- Nút khiếu nại chỉ hiện khi COLLECTED -->
+                                            <button th:if="${report.status == 'COLLECTED'}"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    data-bs-toggle="modal"
+                                                    th:attr="data-bs-target='#complaintModal' + ${report.id}">
+                                                <i class="fas fa-exclamation-circle me-1"></i>Khiếu nại
+                                            </button>
+                                            <span th:unless="${report.status == 'COLLECTED'}"
+                                                  class="text-muted small">-</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Khiếu nại -->
+            <div class="tab-pane fade" id="complaints-tab">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div th:if="${complaints == null or #lists.isEmpty(complaints)}"
+                             class="text-center py-5 text-muted">
+                            <i class="fas fa-smile fa-3x mb-3 d-block text-success"></i>
+                            Bạn chưa có khiếu nại nào. Tuyệt vời!
+                        </div>
+                        <div class="table-responsive" th:unless="${complaints == null or #lists.isEmpty(complaints)}">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Tiêu đề khiếu nại</th>
+                                        <th>Báo cáo liên quan</th>
+                                        <th>Nội dung</th>
+                                        <th>Trạng thái</th>
+                                        <th>Phản hồi</th>
+                                        <th>Ngày gửi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${complaints}">
+                                        <td th:text="${c.id}" class="text-muted small"></td>
+                                        <td class="fw-semibold" th:text="${c.subject}"></td>
+                                        <td class="text-muted small"
+                                            th:text="${c.wasteReport != null ? c.wasteReport.title : '-'}"></td>
+                                        <td class="text-muted small" th:text="${c.content}"></td>
+                                        <td>
+                                            <span class="badge"
+                                                  th:classappend="${c.status == 'OPEN'} ? 'bg-warning text-dark' :
+                                                                  (${c.status == 'IN_REVIEW'} ? 'bg-info' :
+                                                                  (${c.status == 'RESOLVED'} ? 'bg-success' : 'bg-secondary'))"
+                                                  th:text="${c.status == 'OPEN'} ? 'Chờ xử lý' :
+                                                           (${c.status == 'IN_REVIEW'} ? 'Đang xem xét' :
+                                                           (${c.status == 'RESOLVED'} ? 'Đã giải quyết' : 'Đã đóng'))">
+                                            </span>
+                                        </td>
+                                        <td class="text-muted small">
+                                            <span th:if="${c.adminResponse != null and !c.adminResponse.isEmpty()}"
+                                                  class="text-success">
+                                                <i class="fas fa-reply me-1"></i>
+                                                <span th:text="${c.adminResponse}"></span>
+                                            </span>
+                                            <span th:unless="${c.adminResponse != null and !c.adminResponse.isEmpty()}"
+                                                  class="text-muted">Chưa có phản hồi</span>
+                                        </td>
+                                        <td class="text-muted small"
+                                            th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy')}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Complaint Modals -->
+    <div th:each="report : ${reports}">
+        <div th:if="${report.status == 'COLLECTED'}"
+             class="modal fade"
+             th:id="'complaintModal' + ${report.id}"
+             tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-circle me-2"></i>Gửi khiếu nại
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form th:action="@{/citizen/complaints/submit}" method="post">
+                        <div class="modal-body">
+                            <input type="hidden" name="reportId" th:value="${report.id}"/>
+
+                            <div class="p-3 bg-light rounded mb-3">
+                                <small class="text-muted">Báo cáo liên quan:</small>
+                                <p class="fw-semibold mb-0" th:text="${report.title}"></p>
+                                <small class="text-muted" th:text="${report.address}"></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Tiêu đề khiếu nại *</label>
+                                <select name="subject" class="form-select" required>
+                                    <option value="">-- Chọn lý do --</option>
+                                    <option value="Thu gom không đúng giờ">Thu gom không đúng giờ</option>
+                                    <option value="Collector thái độ không tốt">Collector thái độ không tốt</option>
+                                    <option value="Thu gom không đầy đủ">Thu gom không đầy đủ</option>
+                                    <option value="Điểm thưởng không đúng">Điểm thưởng không đúng</option>
+                                    <option value="Rác không được phân loại đúng">Rác không được phân loại đúng</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Mô tả chi tiết *</label>
+                                <textarea name="content" class="form-control" rows="4"
+                                          placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
+                                          required></textarea>
+                            </div>
+
+                            <div class="alert alert-info small mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Khiếu nại sẽ được gửi đến Enterprise và Admin để xem xét.
+                                Chúng tôi sẽ phản hồi trong vòng 24-48 giờ.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-paper-plane me-1"></i>Gửi khiếu nại
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
