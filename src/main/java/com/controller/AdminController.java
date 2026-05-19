@@ -5,6 +5,7 @@ import com.repository.*;
 import com.service.UserService;
 import com.service.WasteReportService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -39,8 +40,19 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(HttpSession session, Model model) {
+    public String dashboard(HttpSession session, Model model,
+                            org.springframework.security.core.Authentication authentication) {
+        
+        // Lấy từ session trước
         User currentAdmin = (User) session.getAttribute("currentUser");
+        
+        // Nếu session null thì lấy từ Security context
+        if (currentAdmin == null && authentication != null) {
+            currentAdmin = userService.findByUsername(authentication.getName()).orElse(null);
+            if (currentAdmin != null) {
+                session.setAttribute("currentUser", currentAdmin);
+            }
+        }
 
         List<User> allUsers = userService.findAll();
         List<WasteReport> allReports = wasteReportService.getAllReports();
@@ -135,6 +147,55 @@ public class AdminController {
             enterpriseRepository.save(e);
         });
         ra.addFlashAttribute("successMsg", "Cập nhật xác minh doanh nghiệp thành công!");
+        return "redirect:/admin/dashboard";
+    }
+
+    // ===== TẠO ADMIN MỚI =====
+    @PostMapping("/create-admin")
+    public String createAdmin(@RequestParam String username,
+                               @RequestParam String email,
+                               @RequestParam String fullName,
+                               @RequestParam(required = false) String phone,
+                               @RequestParam String password,
+                               @RequestParam String confirmPassword,
+                               RedirectAttributes ra) {
+
+        if (!password.equals(confirmPassword)) {
+            ra.addFlashAttribute("errorMsg", "Mật khẩu không khớp!");
+            return "redirect:/admin/dashboard";
+        }
+
+        if (userService.existsByUsername(username)) {
+            ra.addFlashAttribute("errorMsg", "Username '" + username + "' đã tồn tại!");
+            return "redirect:/admin/dashboard";
+        }
+
+        if (userService.existsByEmail(email)) {
+            ra.addFlashAttribute("errorMsg", "Email '" + email + "' đã được sử dụng!");
+            return "redirect:/admin/dashboard";
+        }
+
+        try {
+            Role adminRole = roleRepository.findByName("ADMIN")
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ADMIN role!"));
+
+            User newAdmin = new User();
+            newAdmin.setUsername(username);
+            newAdmin.setEmail(email);
+            newAdmin.setFullName(fullName);
+            newAdmin.setPhone(phone);
+            newAdmin.setPassword(new BCryptPasswordEncoder().encode(password));
+            newAdmin.setRole(adminRole);
+            newAdmin.setIsActive(true);
+            newAdmin.setRewardPoints(0);
+            userService.save(newAdmin);
+
+            ra.addFlashAttribute("successMsg",
+                    "✅ Đã tạo Admin '" + username + "' thành công! Password: " + password);
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMsg", "Lỗi: " + e.getMessage());
+        }
+
         return "redirect:/admin/dashboard";
     }
 }

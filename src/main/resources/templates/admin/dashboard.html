@@ -17,8 +17,8 @@
     </style>
 </head>
 <body>
-
 <div class="d-flex">
+
     <!-- Sidebar -->
     <div class="sidebar p-3" style="width: 260px; position: fixed; top: 0; left: 0; z-index: 100;">
         <div class="text-white mb-4 pt-2">
@@ -26,31 +26,27 @@
             <h5 class="fw-bold mt-2 mb-0">WastePlatform</h5>
             <small class="text-white-50">Admin Panel</small>
         </div>
-
         <nav class="nav flex-column">
-            <a class="nav-link active" href="#dashboard-section"
-               onclick="showSection('dashboard-section', this)">
+            <a class="nav-link active" href="#" onclick="showSection('dashboard-section', this)">
                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
             </a>
-            <a class="nav-link" href="#users-section"
-               onclick="showSection('users-section', this)">
+            <a class="nav-link" href="#" onclick="showSection('users-section', this)">
                 <i class="fas fa-users me-2"></i>Quản lý người dùng
                 <span class="badge bg-primary ms-auto" th:text="${totalUsers}">0</span>
             </a>
-            <a class="nav-link" href="#reports-section"
-               onclick="showSection('reports-section', this)">
+            <a class="nav-link" href="#" onclick="showSection('reports-section', this)">
                 <i class="fas fa-file-alt me-2"></i>Báo cáo rác
                 <span class="badge bg-info ms-auto" th:text="${totalReports}">0</span>
             </a>
-            <a class="nav-link" href="#complaints-section"
-               onclick="showSection('complaints-section', this)">
+            <a class="nav-link" href="#" onclick="showSection('complaints-section', this)">
                 <i class="fas fa-exclamation-circle me-2"></i>Khiếu nại
-                <span class="badge bg-danger ms-auto"
-                      th:text="${openComplaintsCount}">0</span>
+                <span class="badge bg-danger ms-auto" th:text="${openComplaintsCount}">0</span>
             </a>
-            <a class="nav-link" href="#enterprises-section"
-               onclick="showSection('enterprises-section', this)">
+            <a class="nav-link" href="#" onclick="showSection('enterprises-section', this)">
                 <i class="fas fa-building me-2"></i>Doanh nghiệp
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('create-admin-section', this)">
+                <i class="fas fa-user-shield me-2"></i>Tạo Admin mới
             </a>
             <hr class="border-secondary"/>
             <form th:action="@{/auth/logout}" method="post">
@@ -69,12 +65,10 @@
             <h4 class="fw-bold text-success mb-0" id="page-title">
                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard Tổng quan
             </h4>
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-muted small">
-                    <i class="fas fa-user-shield me-1 text-success"></i>
-                    <strong th:text="${currentAdmin.fullName != null ? currentAdmin.fullName : currentAdmin.username}">Admin</strong>
-                </span>
-            </div>
+            <span class="text-muted small">
+                <i class="fas fa-user-shield me-1 text-success"></i>
+                <strong th:text="${currentAdmin != null ? (currentAdmin.fullName != null ? currentAdmin.fullName : currentAdmin.username) : 'Admin'}">Admin</strong>
+            </span>
         </div>
 
         <!-- Alerts -->
@@ -89,9 +83,8 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- ==================== DASHBOARD SECTION ==================== -->
+        <!-- ══ DASHBOARD ══ -->
         <div id="dashboard-section">
-            <!-- Stats -->
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm stat-card border-primary p-3">
@@ -139,7 +132,6 @@
                 </div>
             </div>
 
-            <!-- Row 2 stats -->
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm text-center p-3">
@@ -149,7 +141,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="card border-0 shadow-sm text-center p-3">
-                        <h3 class="fw-bold text-purple" th:text="${totalEnterprise}">0</h3>
+                        <h3 class="fw-bold text-warning" th:text="${totalEnterprise}">0</h3>
                         <p class="text-muted small mb-0">Doanh nghiệp</p>
                     </div>
                 </div>
@@ -170,33 +162,20 @@
             <!-- Recent Reports -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="fw-bold mb-0">
-                        <i class="fas fa-clock me-2 text-warning"></i>Báo cáo mới nhất
-                    </h5>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-clock me-2 text-warning"></i>Báo cáo mới nhất</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Tiêu đề</th>
-                                    <th>Người báo cáo</th>
-                                    <th>Loại rác</th>
-                                    <th>Trạng thái</th>
-                                    <th>Ngày tạo</th>
-                                    <th>Thao tác</th>
-                                </tr>
+                                <tr><th>#</th><th>Tiêu đề</th><th>Người báo cáo</th><th>Loại rác</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr>
                             </thead>
                             <tbody>
                                 <tr th:each="report : ${recentReports}">
                                     <td th:text="${report.id}" class="text-muted small"></td>
                                     <td class="fw-semibold" th:text="${report.title}"></td>
                                     <td th:text="${report.citizen.fullName}"></td>
-                                    <td>
-                                        <span class="badge bg-secondary"
-                                              th:text="${report.wasteType.name}"></span>
-                                    </td>
+                                    <td><span class="badge bg-secondary" th:text="${report.wasteType.name}"></span></td>
                                     <td>
                                         <span class="badge rounded-pill"
                                               th:classappend="${report.status == 'PENDING'} ? 'bg-warning text-dark' :
@@ -204,26 +183,23 @@
                                                               (${report.status == 'REJECTED'} ? 'bg-danger' : 'bg-info'))"
                                               th:text="${report.status}"></span>
                                     </td>
-                                    <td class="text-muted small"
-                                        th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy')}"></td>
+                                    <td class="text-muted small" th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy')}"></td>
                                     <td>
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                                    type="button" data-bs-toggle="dropdown">
-                                                Cập nhật
-                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">Cập nhật</button>
                                             <ul class="dropdown-menu">
                                                 <li th:each="s : ${ {'PENDING','ACCEPTED','ASSIGNED','ON_THE_WAY','COLLECTED','REJECTED'} }">
-                                                    <form th:action="@{/admin/reports/{id}/status(id=${report.id})}"
-                                                          method="post">
+                                                    <form th:action="@{/admin/reports/{id}/status(id=${report.id})}" method="post">
                                                         <input type="hidden" name="status" th:value="${s}"/>
-                                                        <button type="submit" class="dropdown-item"
-                                                                th:text="${s}"></button>
+                                                        <button type="submit" class="dropdown-item" th:text="${s}"></button>
                                                     </form>
                                                 </li>
                                             </ul>
                                         </div>
                                     </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(recentReports)}">
+                                    <td colspan="7" class="text-center py-4 text-muted">Chưa có báo cáo nào</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -232,44 +208,27 @@
             </div>
         </div>
 
-        <!-- ==================== USERS SECTION ==================== -->
+        <!-- ══ USERS ══ -->
         <div id="users-section" class="d-none">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3 d-flex justify-content-between">
-                    <h5 class="fw-bold mb-0">
-                        <i class="fas fa-users me-2 text-primary"></i>Quản lý người dùng
-                    </h5>
-                    <!-- Filter -->
-                    <div class="d-flex gap-2">
-                        <select id="roleFilter" class="form-select form-select-sm" style="width: 150px"
-                                onchange="filterUsers(this.value)">
-                            <option value="all">Tất cả</option>
-                            <option value="CITIZEN">Citizen</option>
-                            <option value="COLLECTOR">Collector</option>
-                            <option value="ENTERPRISE">Enterprise</option>
-                            <option value="ADMIN">Admin</option>
-                        </select>
-                    </div>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-users me-2 text-primary"></i>Quản lý người dùng</h5>
+                    <select id="roleFilter" class="form-select form-select-sm" style="width:150px" onchange="filterUsers(this.value)">
+                        <option value="all">Tất cả</option>
+                        <option value="CITIZEN">Citizen</option>
+                        <option value="COLLECTOR">Collector</option>
+                        <option value="ENTERPRISE">Enterprise</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" id="usersTable">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Username</th>
-                                    <th>Họ tên</th>
-                                    <th>Email</th>
-                                    <th>SĐT</th>
-                                    <th>Vai trò</th>
-                                    <th>Điểm</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
-                                </tr>
+                                <tr><th>#</th><th>Username</th><th>Họ tên</th><th>Email</th><th>SĐT</th><th>Vai trò</th><th>Điểm</th><th>Trạng thái</th><th>Thao tác</th></tr>
                             </thead>
                             <tbody>
-                                <tr th:each="u : ${allUsers}"
-                                    th:attr="data-role=${u.role.name}">
+                                <tr th:each="u : ${allUsers}" th:attr="data-role=${u.role.name}">
                                     <td th:text="${u.id}" class="text-muted small"></td>
                                     <td class="fw-semibold" th:text="${u.username}"></td>
                                     <td th:text="${u.fullName}"></td>
@@ -284,24 +243,17 @@
                                     </td>
                                     <td th:text="${u.rewardPoints}"></td>
                                     <td>
-                                        <span class="badge"
-                                              th:classappend="${u.isActive} ? 'bg-success' : 'bg-secondary'"
+                                        <span class="badge" th:classappend="${u.isActive} ? 'bg-success' : 'bg-secondary'"
                                               th:text="${u.isActive ? 'Active' : 'Inactive'}"></span>
                                     </td>
                                     <td>
                                         <div class="d-flex gap-1">
-                                            <!-- Khóa/Mở tài khoản -->
-                                            <form th:action="@{/admin/users/{id}/toggle-active(id=${u.id})}"
-                                                  method="post">
+                                            <form th:action="@{/admin/users/{id}/toggle-active(id=${u.id})}" method="post">
                                                 <button type="submit" class="btn btn-sm"
                                                         th:classappend="${u.isActive} ? 'btn-outline-danger' : 'btn-outline-success'"
-                                                        th:text="${u.isActive ? 'Khóa' : 'Kích hoạt'}"
-                                                        th:onclick="${u.isActive} ? 'return confirm(\'Khóa tài khoản này?\')' : ''">
-                                                </button>
+                                                        th:text="${u.isActive ? 'Khóa' : 'Kích hoạt'}"></button>
                                             </form>
-                                            <!-- Đổi role -->
-                                            <button class="btn btn-sm btn-outline-warning"
-                                                    data-bs-toggle="modal"
+                                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
                                                     th:attr="data-bs-target='#changeRoleModal' + ${u.id}">
                                                 <i class="fas fa-user-cog"></i>
                                             </button>
@@ -315,39 +267,24 @@
             </div>
         </div>
 
-        <!-- ==================== REPORTS SECTION ==================== -->
+        <!-- ══ REPORTS ══ -->
         <div id="reports-section" class="d-none">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="fw-bold mb-0">
-                        <i class="fas fa-file-alt me-2 text-info"></i>Tất cả báo cáo rác
-                    </h5>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-file-alt me-2 text-info"></i>Tất cả báo cáo rác</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Tiêu đề</th>
-                                    <th>Người báo cáo</th>
-                                    <th>Loại rác</th>
-                                    <th>Địa chỉ</th>
-                                    <th>Trạng thái</th>
-                                    <th>Điểm</th>
-                                    <th>Ngày tạo</th>
-                                    <th>Thao tác</th>
-                                </tr>
+                                <tr><th>#</th><th>Tiêu đề</th><th>Người báo cáo</th><th>Loại rác</th><th>Địa chỉ</th><th>Trạng thái</th><th>Điểm</th><th>Ngày tạo</th><th>Thao tác</th></tr>
                             </thead>
                             <tbody>
                                 <tr th:each="report : ${allReports}">
                                     <td th:text="${report.id}" class="text-muted small"></td>
                                     <td class="fw-semibold" th:text="${report.title}"></td>
                                     <td th:text="${report.citizen.fullName}"></td>
-                                    <td>
-                                        <span class="badge bg-secondary"
-                                              th:text="${report.wasteType.name}"></span>
-                                    </td>
+                                    <td><span class="badge bg-secondary" th:text="${report.wasteType.name}"></span></td>
                                     <td class="text-muted small" th:text="${report.address}"></td>
                                     <td>
                                         <span class="badge rounded-pill"
@@ -357,31 +294,27 @@
                                               th:text="${report.status}"></span>
                                     </td>
                                     <td>
-                                        <span class="text-success fw-bold"
-                                              th:if="${report.rewardPointsEarned > 0}"
+                                        <span class="text-success fw-bold" th:if="${report.rewardPointsEarned > 0}"
                                               th:text="'+' + ${report.rewardPointsEarned}"></span>
                                         <span class="text-muted" th:unless="${report.rewardPointsEarned > 0}">-</span>
                                     </td>
-                                    <td class="text-muted small"
-                                        th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy')}"></td>
+                                    <td class="text-muted small" th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy')}"></td>
                                     <td>
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                                    type="button" data-bs-toggle="dropdown">
-                                                Status
-                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">Status</button>
                                             <ul class="dropdown-menu">
-                                                <li th:each="s : ${ {'PENDING','ACCEPTED','ASSIGNED','ON_THE_WAY','COLLECTED','REJECTED','CANCELLED'} }">
-                                                    <form th:action="@{/admin/reports/{id}/status(id=${report.id})}"
-                                                          method="post">
+                                                <li th:each="s : ${ {'PENDING','ACCEPTED','ASSIGNED','ON_THE_WAY','COLLECTED','REJECTED'} }">
+                                                    <form th:action="@{/admin/reports/{id}/status(id=${report.id})}" method="post">
                                                         <input type="hidden" name="status" th:value="${s}"/>
-                                                        <button type="submit" class="dropdown-item"
-                                                                th:text="${s}"></button>
+                                                        <button type="submit" class="dropdown-item" th:text="${s}"></button>
                                                     </form>
                                                 </li>
                                             </ul>
                                         </div>
                                     </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(allReports)}">
+                                    <td colspan="9" class="text-center py-4 text-muted">Chưa có báo cáo nào</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -390,54 +323,31 @@
             </div>
         </div>
 
-        <!-- ==================== COMPLAINTS SECTION ==================== -->
+        <!-- ══ COMPLAINTS ══ -->
         <div id="complaints-section" class="d-none">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">
-                        <i class="fas fa-exclamation-circle me-2 text-danger"></i>
-                        Quản lý khiếu nại/tranh chấp
-                    </h5>
-                    <div class="d-flex gap-2">
-                        <span class="badge bg-danger fs-6"
-                              th:text="'Chưa giải quyết: ' + ${openComplaintsCount}"></span>
-                    </div>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-exclamation-circle me-2 text-danger"></i>Quản lý khiếu nại</h5>
+                    <span class="badge bg-danger fs-6" th:text="'Chưa giải quyết: ' + ${openComplaintsCount}"></span>
                 </div>
                 <div class="card-body p-0">
-                    <div th:if="${allComplaints == null or #lists.isEmpty(allComplaints)}"
-                         class="text-center py-5 text-muted">
-                        <i class="fas fa-smile fa-3x mb-3 d-block text-success"></i>
-                        Không có khiếu nại nào!
+                    <div th:if="${allComplaints == null or #lists.isEmpty(allComplaints)}" class="text-center py-5 text-muted">
+                        <i class="fas fa-smile fa-3x mb-3 d-block text-success"></i>Không có khiếu nại nào!
                     </div>
-                    <div class="table-responsive"
-                         th:unless="${allComplaints == null or #lists.isEmpty(allComplaints)}">
+                    <div class="table-responsive" th:unless="${allComplaints == null or #lists.isEmpty(allComplaints)}">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Người khiếu nại</th>
-                                    <th>Tiêu đề</th>
-                                    <th>Nội dung</th>
-                                    <th>Báo cáo liên quan</th>
-                                    <th>Trạng thái</th>
-                                    <th>Phản hồi Admin</th>
-                                    <th>Ngày gửi</th>
-                                    <th>Thao tác</th>
-                                </tr>
+                                <tr><th>#</th><th>Người khiếu nại</th><th>Tiêu đề</th><th>Nội dung</th><th>Trạng thái</th><th>Ngày</th><th>Thao tác</th></tr>
                             </thead>
                             <tbody>
-                                <tr th:each="c : ${allComplaints}"
-                                    th:classappend="${c.status == 'OPEN'} ? 'table-warning'">
+                                <tr th:each="c : ${allComplaints}" th:classappend="${c.status == 'OPEN'} ? 'table-warning'">
                                     <td th:text="${c.id}" class="text-muted small"></td>
                                     <td>
                                         <span class="fw-semibold" th:text="${c.user.fullName}"></span><br>
                                         <small class="text-muted" th:text="${c.user.email}"></small>
                                     </td>
                                     <td class="fw-semibold" th:text="${c.subject}"></td>
-                                    <td class="text-muted small" style="max-width: 200px"
-                                        th:text="${c.content}"></td>
-                                    <td class="text-muted small"
-                                        th:text="${c.wasteReport != null ? c.wasteReport.title : '-'}"></td>
+                                    <td class="text-muted small" th:text="${c.content}"></td>
                                     <td>
                                         <span class="badge"
                                               th:classappend="${c.status == 'OPEN'} ? 'bg-danger' :
@@ -448,17 +358,9 @@
                                                        (${c.status == 'RESOLVED'} ? 'Đã giải quyết' : 'Đã đóng'))">
                                         </span>
                                     </td>
-                                    <td class="text-muted small">
-                                        <span th:if="${c.adminResponse != null}"
-                                              th:text="${c.adminResponse}"></span>
-                                        <span th:unless="${c.adminResponse != null}"
-                                              class="text-muted">Chưa có</span>
-                                    </td>
-                                    <td class="text-muted small"
-                                        th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy')}"></td>
+                                    <td class="text-muted small" th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy')}"></td>
                                     <td>
-                                        <button class="btn btn-sm btn-primary"
-                                                data-bs-toggle="modal"
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
                                                 th:attr="data-bs-target='#adminRespondModal' + ${c.id}">
                                             <i class="fas fa-reply me-1"></i>Xử lý
                                         </button>
@@ -471,28 +373,17 @@
             </div>
         </div>
 
-        <!-- ==================== ENTERPRISES SECTION ==================== -->
+        <!-- ══ ENTERPRISES ══ -->
         <div id="enterprises-section" class="d-none">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="fw-bold mb-0">
-                        <i class="fas fa-building me-2 text-warning"></i>Quản lý doanh nghiệp
-                    </h5>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-building me-2 text-warning"></i>Quản lý doanh nghiệp</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Tên công ty</th>
-                                    <th>Người đại diện</th>
-                                    <th>Email</th>
-                                    <th>Giấy phép</th>
-                                    <th>Công suất (tấn/ngày)</th>
-                                    <th>Xác minh</th>
-                                    <th>Thao tác</th>
-                                </tr>
+                                <tr><th>#</th><th>Tên công ty</th><th>Người đại diện</th><th>Email</th><th>Giấy phép</th><th>Xác minh</th><th>Thao tác</th></tr>
                             </thead>
                             <tbody>
                                 <tr th:each="e : ${allEnterprises}">
@@ -500,26 +391,112 @@
                                     <td class="fw-semibold" th:text="${e.companyName}"></td>
                                     <td th:text="${e.user.fullName}"></td>
                                     <td class="text-muted small" th:text="${e.user.email}"></td>
-                                    <td class="text-muted small"
-                                        th:text="${e.licenseNumber != null ? e.licenseNumber : '-'}"></td>
-                                    <td th:text="${e.processingCapacity != null ? e.processingCapacity : '-'}"></td>
+                                    <td class="text-muted small" th:text="${e.licenseNumber != null ? e.licenseNumber : '-'}"></td>
                                     <td>
-                                        <span class="badge"
-                                              th:classappend="${e.isVerified} ? 'bg-success' : 'bg-warning text-dark'"
+                                        <span class="badge" th:classappend="${e.isVerified} ? 'bg-success' : 'bg-warning text-dark'"
                                               th:text="${e.isVerified ? 'Đã xác minh' : 'Chưa xác minh'}"></span>
                                     </td>
                                     <td>
-                                        <form th:action="@{/admin/enterprises/{id}/verify(id=${e.id})}"
-                                              method="post">
+                                        <form th:action="@{/admin/enterprises/{id}/verify(id=${e.id})}" method="post">
                                             <button type="submit" class="btn btn-sm"
                                                     th:classappend="${e.isVerified} ? 'btn-outline-danger' : 'btn-outline-success'"
-                                                    th:text="${e.isVerified ? 'Hủy xác minh' : 'Xác minh'}">
-                                            </button>
+                                                    th:text="${e.isVerified ? 'Hủy xác minh' : 'Xác minh'}"></button>
                                         </form>
                                     </td>
                                 </tr>
+                                <tr th:if="${#lists.isEmpty(allEnterprises)}">
+                                    <td colspan="7" class="text-center py-4 text-muted">Chưa có doanh nghiệp nào</td>
+                                </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ CREATE ADMIN ══ -->
+        <div id="create-admin-section" class="d-none">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-danger text-white py-3">
+                            <h5 class="fw-bold mb-0"><i class="fas fa-user-shield me-2"></i>Tạo tài khoản Admin mới</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form th:action="@{/admin/create-admin}" method="post" onsubmit="return validateAdminForm()">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Username *</label>
+                                    <input type="text" name="username" class="form-control" placeholder="Nhập username" required minlength="4"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Email *</label>
+                                    <input type="email" name="email" class="form-control" placeholder="Nhập email" required/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Họ và tên *</label>
+                                    <input type="text" name="fullName" class="form-control" placeholder="Nhập họ tên" required/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Số điện thoại</label>
+                                    <input type="text" name="phone" class="form-control" placeholder="Nhập SĐT"/>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Mật khẩu *</label>
+                                    <div class="input-group">
+                                        <input type="password" name="password" id="adminPassword" class="form-control"
+                                               placeholder="Ít nhất 6 ký tự" required minlength="6"/>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
+                                            <i class="fas fa-eye" id="eyeIcon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Xác nhận mật khẩu *</label>
+                                    <input type="password" name="confirmPassword" id="confirmPassword" class="form-control"
+                                           placeholder="Nhập lại mật khẩu" required minlength="6" oninput="checkPasswordMatch()"/>
+                                    <div id="passwordMatch" class="form-text"></div>
+                                </div>
+                                <div class="alert alert-warning small">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Tài khoản Admin có toàn quyền quản trị. Chỉ tạo cho người tin cậy!
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100 fw-bold" id="createAdminBtn">
+                                    <i class="fas fa-user-shield me-2"></i>Tạo tài khoản Admin
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Danh sách Admin -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="fw-bold mb-0"><i class="fas fa-shield-alt me-2 text-danger"></i>Danh sách Admin</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Username</th><th>Họ tên</th><th>Email</th><th>Trạng thái</th><th>Thao tác</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="u : ${allUsers}" th:if="${u.role.name == 'ADMIN'}">
+                                        <td class="fw-semibold" th:text="${u.username}"></td>
+                                        <td th:text="${u.fullName}"></td>
+                                        <td class="text-muted small" th:text="${u.email}"></td>
+                                        <td>
+                                            <span class="badge" th:classappend="${u.isActive} ? 'bg-success' : 'bg-secondary'"
+                                                  th:text="${u.isActive ? 'Active' : 'Inactive'}"></span>
+                                        </td>
+                                        <td>
+                                            <form th:action="@{/admin/users/{id}/toggle-active(id=${u.id})}" method="post">
+                                                <button type="submit" class="btn btn-sm"
+                                                        th:classappend="${u.isActive} ? 'btn-outline-danger' : 'btn-outline-success'"
+                                                        th:text="${u.isActive ? 'Khóa' : 'Kích hoạt'}"></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -557,55 +534,40 @@
     </div>
 </div>
 
-<!-- Admin Respond Modals -->
+<!-- Complaint Modals -->
 <div th:each="c : ${allComplaints}">
     <div class="modal fade" th:id="'adminRespondModal' + ${c.id}" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-gavel me-2"></i>Xử lý khiếu nại #<span th:text="${c.id}"></span>
-                    </h5>
+                    <h5 class="modal-title"><i class="fas fa-gavel me-2"></i>Xử lý khiếu nại #<span th:text="${c.id}"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form th:action="@{/admin/complaints/{id}/resolve(id=${c.id})}" method="post">
                     <div class="modal-body">
                         <div class="p-3 bg-light rounded mb-3">
-                            <div class="row">
-                                <div class="col-6">
-                                    <small class="text-muted">Người khiếu nại:</small>
-                                    <p class="fw-semibold mb-1" th:text="${c.user.fullName}"></p>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Tiêu đề:</small>
-                                    <p class="fw-semibold mb-1" th:text="${c.subject}"></p>
-                                </div>
-                            </div>
-                            <small class="text-muted">Nội dung khiếu nại:</small>
+                            <small class="text-muted">Người khiếu nại:</small>
+                            <p class="fw-semibold mb-1" th:text="${c.user.fullName}"></p>
+                            <small class="text-muted">Nội dung:</small>
                             <p class="mb-0" th:text="${c.content}"></p>
                         </div>
-
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Quyết định xử lý *</label>
+                            <label class="form-label fw-semibold">Quyết định *</label>
                             <select name="status" class="form-select" required>
                                 <option value="IN_REVIEW">Đang xem xét</option>
-                                <option value="RESOLVED">Đã giải quyết - Chấp nhận khiếu nại</option>
-                                <option value="CLOSED">Đóng - Bác bỏ khiếu nại</option>
+                                <option value="RESOLVED">Đã giải quyết</option>
+                                <option value="CLOSED">Đóng - Bác bỏ</option>
                             </select>
                         </div>
-
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Phản hồi chính thức *</label>
+                            <label class="form-label fw-semibold">Phản hồi *</label>
                             <textarea name="adminResponse" class="form-control" rows="4"
-                                      placeholder="Nhập phản hồi chính thức từ Admin..."
-                                      required th:text="${c.adminResponse}"></textarea>
+                                      placeholder="Nhập phản hồi..." required></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-gavel me-1"></i>Xác nhận xử lý
-                        </button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-gavel me-1"></i>Xác nhận</button>
                     </div>
                 </form>
             </div>
@@ -615,34 +577,61 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Switch sections
     function showSection(sectionId, link) {
         document.querySelectorAll('[id$="-section"]').forEach(s => s.classList.add('d-none'));
         document.getElementById(sectionId).classList.remove('d-none');
-
         document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
-
         const titles = {
             'dashboard-section': '<i class="fas fa-tachometer-alt me-2"></i>Dashboard Tổng quan',
             'users-section': '<i class="fas fa-users me-2"></i>Quản lý người dùng',
             'reports-section': '<i class="fas fa-file-alt me-2"></i>Báo cáo rác',
-            'complaints-section': '<i class="fas fa-exclamation-circle me-2"></i>Khiếu nại & Tranh chấp',
-            'enterprises-section': '<i class="fas fa-building me-2"></i>Doanh nghiệp'
+            'complaints-section': '<i class="fas fa-exclamation-circle me-2"></i>Khiếu nại',
+            'enterprises-section': '<i class="fas fa-building me-2"></i>Doanh nghiệp',
+            'create-admin-section': '<i class="fas fa-user-shield me-2"></i>Tạo Admin mới'
         };
         document.getElementById('page-title').innerHTML = titles[sectionId] || '';
         return false;
     }
 
-    // Filter users by role
     function filterUsers(role) {
         document.querySelectorAll('#usersTable tbody tr').forEach(row => {
-            if (role === 'all' || row.dataset.role === role) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+            row.style.display = (role === 'all' || row.dataset.role === role) ? '' : 'none';
         });
+    }
+
+    function togglePassword() {
+        const input = document.getElementById('adminPassword');
+        const icon = document.getElementById('eyeIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    function checkPasswordMatch() {
+        const pwd = document.getElementById('adminPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
+        const msg = document.getElementById('passwordMatch');
+        const btn = document.getElementById('createAdminBtn');
+        if (!confirm) { msg.innerHTML = ''; return; }
+        if (pwd === confirm) {
+            msg.innerHTML = '<span class="text-success"><i class="fas fa-check me-1"></i>Mật khẩu khớp</span>';
+            btn.disabled = false;
+        } else {
+            msg.innerHTML = '<span class="text-danger"><i class="fas fa-times me-1"></i>Mật khẩu không khớp</span>';
+            btn.disabled = true;
+        }
+    }
+
+    function validateAdminForm() {
+        const pwd = document.getElementById('adminPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
+        if (pwd !== confirm) { alert('Mật khẩu không khớp!'); return false; }
+        return true;
     }
 </script>
 </body>
