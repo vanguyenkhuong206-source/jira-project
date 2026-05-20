@@ -154,6 +154,19 @@
 								    <p class="mb-0 small"
 								       th:text="${a.wasteReport.citizenNote}"></p>
 								</div>
+																	<!-- Ảnh rác từ Citizen -->
+									<div th:if="${a.wasteReport.imageUrl != null}" class="mb-3">
+									    <p class="text-muted small mb-1 fw-semibold">
+									        <i class="fas fa-camera me-1 text-success"></i>Ảnh rác Citizen gửi:
+									    </p>
+									    <img th:src="${a.wasteReport.imageUrl}"
+									         style="width:120px;height:120px;object-fit:cover;
+									                border-radius:10px;cursor:pointer;
+									                border:2px solid #198754;"
+									         data-bs-toggle="modal"
+									         th:attr="data-bs-target='#colImgModal' + ${a.id}"
+									         title="Click xem ảnh lớn"/>
+									</div>
                                 <!-- Thông tin rác -->
                                 <div class="mb-2">
                                     <span class="badge me-2"
@@ -333,6 +346,41 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+		    <!-- Image Modals Collector -->
+		<div th:each="a : ${activeAssignments}">
+		    <div th:if="${a.wasteReport.imageUrl != null}"
+		         class="modal fade" th:id="'colImgModal' + ${a.id}" tabindex="-1">
+		        <div class="modal-dialog modal-lg modal-dialog-centered">
+		            <div class="modal-content">
+		                <div class="modal-header bg-success text-white">
+		                    <h5 class="modal-title">
+		                        <i class="fas fa-image me-2"></i>Ảnh rác từ Citizen
+		                    </h5>
+		                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+		                </div>
+		                <div class="modal-body text-center p-3 bg-dark">
+		                    <img th:src="${a.wasteReport.imageUrl}"
+		                         class="img-fluid rounded"
+		                         style="max-height:500px;object-fit:contain;"
+		                         alt="Ảnh rác"/>
+		                </div>
+		                <div class="modal-footer">
+		                    <div class="me-auto">
+		                        <small class="text-muted fw-semibold d-block"
+		                               th:text="${a.wasteReport.title}"></small>
+		                        <small class="text-muted"
+		                               th:text="${a.wasteReport.address}"></small>
+		                    </div>
+		                    <a th:href="${a.wasteReport.imageUrl}" target="_blank"
+		                       class="btn btn-outline-success btn-sm">
+		                        <i class="fas fa-external-link-alt me-1"></i>Mở ảnh gốc
+		                    </a>
+		                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+		                </div>
+		            </div>
+		        </div>
+		    </div>
+		</div>
     <script>
         function previewImg(input) {
             const preview = document.getElementById('preview');

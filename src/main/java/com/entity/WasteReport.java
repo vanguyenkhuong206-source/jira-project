@@ -29,6 +29,7 @@ public class WasteReport {
     private String imageUrl;
 
     private Double latitude;
+
     private Double longitude;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -42,13 +43,9 @@ public class WasteReport {
 
     @Column(name = "reward_points_earned")
     private Integer rewardPointsEarned = 0;
-    
+
     @Column(name = "citizen_note", columnDefinition = "TEXT")
     private String citizenNote;
-
-    // Getter & Setter
-    public String getCitizenNote() { return citizenNote; }
-    public void setCitizenNote(String citizenNote) { this.citizenNote = citizenNote; }
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -56,47 +53,138 @@ public class WasteReport {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public WasteReport() {}
+    public WasteReport() {
+    }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
 
-    public User getCitizen() { return citizen; }
-    public void setCitizen(User citizen) { this.citizen = citizen; }
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
-    public WasteType getWasteType() { return wasteType; }
-    public void setWasteType(WasteType wasteType) { this.wasteType = wasteType; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public User getCitizen() {
+        return citizen;
+    }
 
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public void setCitizen(User citizen) {
+        this.citizen = citizen;
+    }
 
-    public Double getLatitude() { return latitude; }
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public WasteType getWasteType() {
+        return wasteType;
+    }
 
-    public Double getLongitude() { return longitude; }
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public void setWasteType(WasteType wasteType) {
+        this.wasteType = wasteType;
+    }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public String getTitle() {
+        return title;
+    }
 
-    public Double getQuantityKg() { return quantityKg; }
-    public void setQuantityKg(Double quantityKg) { this.quantityKg = quantityKg; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Integer getRewardPointsEarned() { return rewardPointsEarned; }
-    public void setRewardPointsEarned(Integer rewardPointsEarned) { this.rewardPointsEarned = rewardPointsEarned; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getImageUrl() {
+        return imageUrl;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Double getQuantityKg() {
+        return quantityKg;
+    }
+
+    public void setQuantityKg(Double quantityKg) {
+        this.quantityKg = quantityKg;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getRewardPointsEarned() {
+        return rewardPointsEarned;
+    }
+
+    public void setRewardPointsEarned(Integer rewardPointsEarned) {
+        this.rewardPointsEarned = rewardPointsEarned;
+    }
+
+    public String getCitizenNote() {
+        return citizenNote;
+    }
+
+    public void setCitizenNote(String citizenNote) {
+        this.citizenNote = citizenNote;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
+

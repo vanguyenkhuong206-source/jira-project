@@ -105,7 +105,19 @@
                                                     </small>
                                                     <small class="text-muted" th:text="${report.citizenNote}"></small>
                                                 </div>
-                                            </div>
+													                                                <!-- Ảnh rác từ Citizen -->
+													<div th:if="${report.imageUrl != null}" class="mt-2">
+													    <img th:src="${report.imageUrl}"
+													         style="width:80px;height:80px;object-fit:cover;border-radius:8px;
+													                cursor:pointer;border:2px solid #198754;"
+													         data-bs-toggle="modal"
+													         th:attr="data-bs-target='#entImgModal' + ${report.id}"
+													         title="Click xem ảnh lớn"/>
+													    <small class="text-muted ms-2 small">
+													        <i class="fas fa-camera me-1"></i>Ảnh từ Citizen
+													    </small>
+													</div>
+	                                            </div>
                                             <div class="ms-3 d-flex gap-2">
                                                 <form th:action="@{/enterprise/reports/{id}/accept(id=${report.id})}" method="post">
                                                     <button type="submit" class="btn btn-success btn-sm">
@@ -502,6 +514,47 @@
                                                 <i class="fas fa-check-circle me-1"></i>
                                                 <span th:text="${c.adminResponse}"></span>
                                             </div>
+											                                            <!-- Image Modals Enterprise -->
+											<div th:each="report : ${pendingReports}">
+											    <div th:if="${report.imageUrl != null}"
+											         class="modal fade" th:id="'entImgModal' + ${report.id}" tabindex="-1">
+											        <div class="modal-dialog modal-lg modal-dialog-centered">
+											            <div class="modal-content">
+											                <div class="modal-header bg-success text-white">
+											                    <h5 class="modal-title">
+											                        <i class="fas fa-image me-2"></i>
+											                        <span th:text="${report.title}"></span>
+											                    </h5>
+											                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+											                </div>
+											                <div class="modal-body text-center p-3 bg-dark">
+											                    <img th:src="${report.imageUrl}"
+											                         class="img-fluid rounded"
+											                         style="max-height:500px;object-fit:contain;"
+											                         alt="Ảnh rác"/>
+											                </div>
+											                <div class="modal-footer">
+											                    <div class="me-auto">
+											                        <small class="text-muted d-block">
+											                            <i class="fas fa-map-marker-alt me-1"></i>
+											                            <span th:text="${report.address}"></span>
+											                        </small>
+											                        <small class="text-muted">
+											                            <i class="fas fa-recycle me-1"></i>
+											                            <span th:text="${report.wasteType.name}"></span>
+											                            <span th:if="${report.quantityKg != null}"
+											                                  th:text="' · ' + ${report.quantityKg} + ' kg'"></span>
+											                        </small>
+											                    </div>
+											                    <a th:href="${report.imageUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+											                        <i class="fas fa-external-link-alt me-1"></i>Mở ảnh gốc
+											                    </a>
+											                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+											                </div>
+											            </div>
+											        </div>
+											    </div>
+											</div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -561,12 +614,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:inline="javascript">
-        // ── Dữ liệu từ server ─────────────────────────────────────────────
+        // ── Dữ liệu từ server 
         const weightByType  = /*[[${weightByType}]]*/ {};
         const weightByMonth = /*[[${weightByMonth}]]*/ {};
         const totalKg       = /*[[${totalKg}]]*/ 0;
 
-        // ── Biểu đồ loại rác (Doughnut) ───────────────────────────────────
+        // ── Biểu đồ loại rác (Doughnut) 
         const typeLabels = Object.keys(weightByType);
         const typeData   = Object.values(weightByType);
         if (typeLabels.length > 0) {
@@ -594,7 +647,7 @@
             });
         }
 
-        // ── Biểu đồ theo tháng (Bar) ──────────────────────────────────────
+        // ── Biểu đồ theo tháng (Bar) 
         new Chart(document.getElementById('chartByMonth'), {
             type: 'bar',
             data: {
@@ -617,7 +670,7 @@
             }
         });
 
-        // ── Progress bars (tính từ counter cards) ─────────────────────────
+        // ── Progress bars (tính từ counter cards) 
         function updateProgressBars(pending, assigned, onTheWay, collected, total) {
             if (total === 0) return;
             const pctCollected   = (collected / total * 100).toFixed(1);
@@ -641,28 +694,53 @@
             /*[[${totalReports}]]*/ 0
         );
 
-        // ── Real-time refresh (mỗi 30 giây) ──────────────────────────────
         function refreshProgress() {
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ':' +
+                            now.getMinutes().toString().padStart(2,'0') + ':' +
+                            now.getSeconds().toString().padStart(2,'0') + ' ' +
+                            now.getDate().toString().padStart(2,'0') + '/' +
+                            (now.getMonth()+1).toString().padStart(2,'0') + '/' +
+                            now.getFullYear();
+            document.getElementById('lastUpdated').textContent = '⏱ Cập nhật lúc: ' + timeStr;
+
             fetch('/enterprise/api/progress')
                 .then(r => r.json())
                 .then(d => {
-                    document.getElementById('cnt-total').textContent    = d.total;
-                    document.getElementById('cnt-pending').textContent  = d.pending;
-                    document.getElementById('cnt-assigned').textContent = d.assigned;
-                    document.getElementById('cnt-ontheway').textContent = d.onTheWay;
-                    document.getElementById('cnt-collected').textContent= d.collected;
-                    document.getElementById('cnt-rejected').textContent = d.rejected;
-                    document.getElementById('lastUpdated').textContent  = 'Cập nhật lúc: ' + d.updatedAt;
-                    updateProgressBars(d.pending, d.assigned, d.onTheWay, d.collected, d.total);
+                    document.getElementById('cnt-total').textContent     = d.total    || 0;
+                    document.getElementById('cnt-pending').textContent   = d.pending  || 0;
+                    document.getElementById('cnt-assigned').textContent  = d.assigned || 0;
+                    document.getElementById('cnt-ontheway').textContent  = d.onTheWay || 0;
+                    document.getElementById('cnt-collected').textContent = d.collected|| 0;
+                    document.getElementById('cnt-rejected').textContent  = d.rejected || 0;
+                    updateProgressBars(
+                        d.pending||0, d.assigned||0, d.onTheWay||0, d.collected||0, d.total||0
+                    );
                 })
-                .catch(() => {});
+                .catch(() => {
+                    // API chưa có → vẫn hiện thời gian
+                });
         }
 
-        // Cập nhật ngay khi load tab
-        document.querySelector('[href="#progress-tab"]').addEventListener('shown.bs.tab', refreshProgress);
+        // Hiện thời gian ngay khi load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshProgress();
+            setInterval(refreshProgress, 30000);
 
-        // Auto-refresh mỗi 30 giây
-        setInterval(refreshProgress, 30000);
+            // Cập nhật đồng hồ mỗi giây
+            setInterval(function() {
+                const now = new Date();
+                const timeStr = now.getHours().toString().padStart(2,'0') + ':' +
+                                now.getMinutes().toString().padStart(2,'0') + ':' +
+                                now.getSeconds().toString().padStart(2,'0') + ' ' +
+                                now.getDate().toString().padStart(2,'0') + '/' +
+                                (now.getMonth()+1).toString().padStart(2,'0') + '/' +
+                                now.getFullYear();
+                const el = document.getElementById('lastUpdated');
+                if (el) el.textContent = '⏱ ' + timeStr;
+            }, 1000);
+        });
+
     </script>
 </body>
 </html>
