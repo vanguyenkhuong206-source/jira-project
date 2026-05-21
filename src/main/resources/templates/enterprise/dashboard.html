@@ -62,9 +62,458 @@
                           th:text="${openComplaints != null ? #lists.size(openComplaints) : 0}">0</span>
                 </a>
             </li>
+            <li class="nav-item">
+			    <a class="nav-link" data-bs-toggle="tab" href="#capacity-tab">
+			        <i class="fas fa-cogs me-1"></i>Năng lực xử lý
+			        <span th:if="${enterprise != null and enterprise.isVerified}"
+			              class="badge bg-success ms-1">✓ Đã xác minh</span>
+			    </a>
+			</li>
         </ul>
 
         <div class="tab-content">
+        
+        	<!-- ══════════════════════════════════════════════════════════════
+     TAB: Năng lực xử lý
+══════════════════════════════════════════════════════════════ -->
+<div class="tab-pane fade" id="capacity-tab">
+    <div class="row g-4">
+
+        <!-- Card thông tin hiện tại -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-building me-2"></i>Thông tin hiện tại
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${enterprise == null}"
+                         class="text-center py-4 text-muted">
+                        <i class="fas fa-exclamation-circle fa-2x mb-2 d-block text-warning"></i>
+                        Chưa có thông tin doanh nghiệp
+                    </div>
+                    <div th:unless="${enterprise == null}">
+
+                        <!-- Trạng thái xác minh -->
+                        <div class="mb-4 p-3 rounded"
+                             th:classappend="${enterprise.isVerified} ? 'bg-success bg-opacity-10 border border-success border-opacity-25' : 'bg-warning bg-opacity-10 border border-warning border-opacity-25'">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-certificate fs-4"
+                                   th:classappend="${enterprise.isVerified} ? 'text-success' : 'text-warning'"></i>
+                                <div>
+                                    <div class="fw-bold"
+                                         th:text="${enterprise.isVerified} ? '✅ Đã được xác minh' : '⏳ Chờ xác minh từ Admin'"></div>
+                                    <small class="text-muted">
+                                        <span th:if="${enterprise.isVerified}">Doanh nghiệp của bạn đã được Admin xác nhận hoạt động hợp lệ</span>
+                                        <span th:unless="${enterprise.isVerified}">Liên hệ Admin để được xác minh và tăng độ tin cậy</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin chi tiết -->
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <td class="text-muted fw-semibold" style="width:40%">
+                                    <i class="fas fa-building me-1"></i>Tên công ty
+                                </td>
+                                <td class="fw-bold" th:text="${enterprise.companyName}">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-id-card me-1"></i>Giấy phép
+                                </td>
+                                <td th:text="${enterprise.licenseNumber != null ? enterprise.licenseNumber : 'Chưa cập nhật'}">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-weight me-1"></i>Công suất
+                                </td>
+                                <td>
+                                    <span th:if="${enterprise.processingCapacity != null}"
+                                          th:text="${enterprise.processingCapacity} + ' tấn/ngày'"></span>
+                                    <span th:unless="${enterprise.processingCapacity != null}"
+                                          class="text-muted">Chưa cập nhật</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-map-marked-alt me-1"></i>Khu vực
+                                </td>
+                                <td th:text="${enterprise.serviceArea != null ? enterprise.serviceArea : 'Chưa cập nhật'}">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-recycle me-1"></i>Loại rác tiếp nhận
+                                </td>
+                                <td>
+                                    <span th:if="${enterprise.acceptedWasteTypes != null and !enterprise.acceptedWasteTypes.isEmpty()}"
+                                          th:text="${enterprise.acceptedWasteTypes}"></span>
+                                    <span th:unless="${enterprise.acceptedWasteTypes != null and !enterprise.acceptedWasteTypes.isEmpty()}"
+                                          class="text-muted">Chưa cập nhật</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form cập nhật năng lực -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-edit me-2 text-success"></i>Cập nhật năng lực xử lý
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/enterprise/profile/update}" method="post">
+
+                        <!-- Tên công ty -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-building me-1 text-success"></i>Tên công ty *
+                            </label>
+                            <input type="text" name="companyName" class="form-control"
+                                   th:value="${enterprise != null ? enterprise.companyName : ''}"
+                                   placeholder="Nhập tên công ty" required/>
+                        </div>
+
+                        <!-- Số giấy phép -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-id-card me-1 text-success"></i>Số giấy phép hoạt động
+                            </label>
+                            <input type="text" name="licenseNumber" class="form-control"
+                                   th:value="${enterprise != null ? enterprise.licenseNumber : ''}"
+                                   placeholder="VD: GP-TCX-2024-001"/>
+                        </div>
+
+                        <!-- Công suất xử lý -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-weight me-1 text-success"></i>Công suất xử lý (tấn/ngày)
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="processingCapacity" class="form-control"
+                                       th:value="${enterprise != null ? enterprise.processingCapacity : ''}"
+                                       placeholder="VD: 50" step="0.1" min="0"/>
+                                <span class="input-group-text">tấn/ngày</span>
+                            </div>
+                        </div>
+
+                        <!-- Khu vực phục vụ -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-map-marked-alt me-1 text-success"></i>Khu vực phục vụ
+                            </label>
+                            <input type="text" name="serviceArea" class="form-control"
+                                   th:value="${enterprise != null ? enterprise.serviceArea : ''}"
+                                   placeholder="VD: Quận 1, Quận 3, Bình Thạnh, TP.HCM"/>
+                            <div class="form-text">Nhập các khu vực, phân cách bằng dấu phẩy</div>
+                        </div>
+
+                        <!-- Loại rác tiếp nhận -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-recycle me-1 text-success"></i>Loại rác tiếp nhận
+                            </label>
+                            <div class="row g-2">
+                                <div th:each="wt : ${allWasteTypes}" class="col-md-6">
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                               name="acceptedWasteTypes"
+                                               th:value="${wt.name}"
+                                               class="form-check-input"
+                                               th:id="'wt_' + ${wt.id}"
+                                               th:checked="${enterprise != null
+                                                   and enterprise.acceptedWasteTypes != null
+                                                   and enterprise.acceptedWasteTypes.contains(wt.name)}"/>
+                                        <label class="form-check-label" th:for="'wt_' + ${wt.id}">
+                                            <span class="badge me-1"
+                                                  th:classappend="${wt.category == 'ORGANIC'} ? 'bg-success' :
+                                                                  (${wt.category == 'RECYCLABLE'} ? 'bg-info' :
+                                                                  (${wt.category == 'HAZARDOUS'} ? 'bg-danger' : 'bg-secondary'))"
+                                                  th:text="${wt.category}"></span>
+                                            <span th:text="${wt.name}"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="fas fa-info-circle me-1 text-info"></i>
+                                Chọn các loại rác mà doanh nghiệp có thể tiếp nhận và xử lý
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 fw-bold">
+                            <i class="fas fa-save me-2"></i>Lưu thông tin năng lực
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê nhanh -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-chart-bar me-2 text-info"></i>
+                        Hiệu suất hoạt động
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-3 text-center">
+                            <div class="text-success fw-bold fs-1" th:text="${collectedCount}">0</div>
+                            <div class="text-muted">Báo cáo đã hoàn thành</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-info fw-bold fs-1"
+                                 th:text="${#numbers.formatDecimal(totalKg, 1, 1)} + ' kg'">0 kg</div>
+                            <div class="text-muted">Tổng khối lượng thu gom</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-warning fw-bold fs-1" th:text="${#lists.size(collectors)}">0</div>
+                            <div class="text-muted">Collectors đang hoạt động</div>
+                  <!-- ══════════════════════════════════════════════════════════════
+     TAB: Năng lực xử lý
+══════════════════════════════════════════════════════════════ -->
+<div class="tab-pane fade" id="capacity-tab">
+    <div class="row g-4">
+
+        <!-- Card thông tin hiện tại -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-building me-2"></i>Thông tin hiện tại
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${enterprise == null}"
+                         class="text-center py-4 text-muted">
+                        <i class="fas fa-exclamation-circle fa-2x mb-2 d-block text-warning"></i>
+                        Chưa có thông tin doanh nghiệp
+                    </div>
+                    <div th:unless="${enterprise == null}">
+
+                        <!-- Trạng thái xác minh -->
+                        <div class="mb-4 p-3 rounded"
+                             th:classappend="${enterprise.isVerified} ? 'bg-success bg-opacity-10 border border-success border-opacity-25' : 'bg-warning bg-opacity-10 border border-warning border-opacity-25'">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-certificate fs-4"
+                                   th:classappend="${enterprise.isVerified} ? 'text-success' : 'text-warning'"></i>
+                                <div>
+                                    <div class="fw-bold"
+                                         th:text="${enterprise.isVerified} ? '✅ Đã được xác minh' : '⏳ Chờ xác minh từ Admin'"></div>
+                                    <small class="text-muted">
+                                        <span th:if="${enterprise.isVerified}">Doanh nghiệp của bạn đã được Admin xác nhận hoạt động hợp lệ</span>
+                                        <span th:unless="${enterprise.isVerified}">Liên hệ Admin để được xác minh và tăng độ tin cậy</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin chi tiết -->
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <td class="text-muted fw-semibold" style="width:40%">
+                                    <i class="fas fa-building me-1"></i>Tên công ty
+                                </td>
+                                <td class="fw-bold" th:text="${enterprise.companyName}">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-id-card me-1"></i>Giấy phép
+                                </td>
+                                <td th:text="${enterprise.licenseNumber != null ? enterprise.licenseNumber : 'Chưa cập nhật'}">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-weight me-1"></i>Công suất
+                                </td>
+                                <td>
+                                    <span th:if="${enterprise.processingCapacity != null}"
+                                          th:text="${enterprise.processingCapacity} + ' tấn/ngày'"></span>
+                                    <span th:unless="${enterprise.processingCapacity != null}"
+                                          class="text-muted">Chưa cập nhật</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-map-marked-alt me-1"></i>Khu vực
+                                </td>
+                                <td th:text="${enterprise.serviceArea != null ? enterprise.serviceArea : 'Chưa cập nhật'}">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted fw-semibold">
+                                    <i class="fas fa-recycle me-1"></i>Loại rác tiếp nhận
+                                </td>
+                                <td>
+                                    <span th:if="${enterprise.acceptedWasteTypes != null and !enterprise.acceptedWasteTypes.isEmpty()}"
+                                          th:text="${enterprise.acceptedWasteTypes}"></span>
+                                    <span th:unless="${enterprise.acceptedWasteTypes != null and !enterprise.acceptedWasteTypes.isEmpty()}"
+                                          class="text-muted">Chưa cập nhật</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form cập nhật năng lực -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-edit me-2 text-success"></i>Cập nhật năng lực xử lý
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/enterprise/profile/update}" method="post">
+
+                        <!-- Tên công ty -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-building me-1 text-success"></i>Tên công ty *
+                            </label>
+                            <input type="text" name="companyName" class="form-control"
+                                   th:value="${enterprise != null ? enterprise.companyName : ''}"
+                                   placeholder="Nhập tên công ty" required/>
+                        </div>
+
+                        <!-- Số giấy phép -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-id-card me-1 text-success"></i>Số giấy phép hoạt động
+                            </label>
+                            <input type="text" name="licenseNumber" class="form-control"
+                                   th:value="${enterprise != null ? enterprise.licenseNumber : ''}"
+                                   placeholder="VD: GP-TCX-2024-001"/>
+                        </div>
+
+                        <!-- Công suất xử lý -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-weight me-1 text-success"></i>Công suất xử lý (tấn/ngày)
+                            </label>
+                            <div class="input-group">
+                                <input type="number" name="processingCapacity" class="form-control"
+                                       th:value="${enterprise != null ? enterprise.processingCapacity : ''}"
+                                       placeholder="VD: 50" step="0.1" min="0"/>
+                                <span class="input-group-text">tấn/ngày</span>
+                            </div>
+                        </div>
+
+                        <!-- Khu vực phục vụ -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-map-marked-alt me-1 text-success"></i>Khu vực phục vụ
+                            </label>
+                            <input type="text" name="serviceArea" class="form-control"
+                                   th:value="${enterprise != null ? enterprise.serviceArea : ''}"
+                                   placeholder="VD: Quận 1, Quận 3, Bình Thạnh, TP.HCM"/>
+                            <div class="form-text">Nhập các khu vực, phân cách bằng dấu phẩy</div>
+                        </div>
+
+                        <!-- Loại rác tiếp nhận -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-recycle me-1 text-success"></i>Loại rác tiếp nhận
+                            </label>
+                            <div class="row g-2">
+                                <div th:each="wt : ${allWasteTypes}" class="col-md-6">
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                               name="acceptedWasteTypes"
+                                               th:value="${wt.name}"
+                                               class="form-check-input"
+                                               th:id="'wt_' + ${wt.id}"
+                                               th:checked="${enterprise != null
+                                                   and enterprise.acceptedWasteTypes != null
+                                                   and enterprise.acceptedWasteTypes.contains(wt.name)}"/>
+                                        <label class="form-check-label" th:for="'wt_' + ${wt.id}">
+                                            <span class="badge me-1"
+                                                  th:classappend="${wt.category == 'ORGANIC'} ? 'bg-success' :
+                                                                  (${wt.category == 'RECYCLABLE'} ? 'bg-info' :
+                                                                  (${wt.category == 'HAZARDOUS'} ? 'bg-danger' : 'bg-secondary'))"
+                                                  th:text="${wt.category}"></span>
+                                            <span th:text="${wt.name}"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="fas fa-info-circle me-1 text-info"></i>
+                                Chọn các loại rác mà doanh nghiệp có thể tiếp nhận và xử lý
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 fw-bold">
+                            <i class="fas fa-save me-2"></i>Lưu thông tin năng lực
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê nhanh -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-chart-bar me-2 text-info"></i>
+                        Hiệu suất hoạt động
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-3 text-center">
+                            <div class="text-success fw-bold fs-1" th:text="${collectedCount}">0</div>
+                            <div class="text-muted">Báo cáo đã hoàn thành</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-info fw-bold fs-1"
+                                 th:text="${#numbers.formatDecimal(totalKg, 1, 1)} + ' kg'">0 kg</div>
+                            <div class="text-muted">Tổng khối lượng thu gom</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-warning fw-bold fs-1" th:text="${#lists.size(collectors)}">0</div>
+                            <div class="text-muted">Collectors đang hoạt động</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="fw-bold fs-1"
+                                 th:classappend="${enterprise != null and enterprise.processingCapacity != null and totalKg > 0 and (totalKg / 1000) < enterprise.processingCapacity} ? 'text-success' : 'text-danger'"
+                                 th:text="${enterprise != null and enterprise.processingCapacity != null ? enterprise.processingCapacity + ' tấn/ngày' : 'Chưa cập nhật'}">
+                            </div>
+                            <div class="text-muted">Công suất tối đa</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>      </div>
+                        <div class="col-md-3 text-center">
+                            <div class="fw-bold fs-1"
+                                 th:classappend="${enterprise != null and enterprise.processingCapacity != null and totalKg > 0 and (totalKg / 1000) < enterprise.processingCapacity} ? 'text-success' : 'text-danger'"
+                                 th:text="${enterprise != null and enterprise.processingCapacity != null ? enterprise.processingCapacity + ' tấn/ngày' : 'Chưa cập nhật'}">
+                            </div>
+                            <div class="text-muted">Công suất tối đa</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
 
             <!-- ══════════════════════════════════════════════════════════════
                  TAB 1: Yêu cầu thu gom (giữ nguyên)

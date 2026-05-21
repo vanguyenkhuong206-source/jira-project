@@ -32,6 +32,12 @@ public class Enterprise {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "accepted_waste_types", columnDefinition = "TEXT")
+    private String acceptedWasteTypes;
+
+    public String getAcceptedWasteTypes() { return acceptedWasteTypes; }
+    public void setAcceptedWasteTypes(String acceptedWasteTypes) { this.acceptedWasteTypes = acceptedWasteTypes; }
 
     public Enterprise() {}
 
